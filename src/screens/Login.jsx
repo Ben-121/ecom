@@ -1,23 +1,38 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Grid, Typography, Box, FormControlLabel, Checkbox } from '@mui/material';
+import { Container, TextField, Button, Grid, Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
+import { auth, db } from '../components/firebase'; // assuming you have exported 'db' from your Firebase config
 import { toast } from 'react-toastify';
-import { auth } from '../components/firebase';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
       const user = auth.currentUser;
-      console.log(user);
-      
-      navigate('/');
+
+      // Fetch user data from Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming "users" is your collection name
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log(userData);
+
+        // Check if the user is a seller
+        if (userData.isSeller) {
+          navigate('/seller');
+        } else {
+          navigate('/');
+        }
+      } else {
+        console.log("No such document!");
+      }
     } catch (error) {
       console.log(error.message);
       toast.error(error.message, {
@@ -25,8 +40,6 @@ const Login = () => {
       });
     }
   };
-
-  const navigate = useNavigate();
 
   return (
     <Container maxWidth="xs">
@@ -66,16 +79,6 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="Remember me"
-          />
           <Button
             type="submit"
             fullWidth
@@ -86,7 +89,9 @@ const Login = () => {
           </Button>
           <Grid container justifyContent="flex-end">
             <Grid item>
-              <Button onClick={() => navigate('/signup')}>
+              <Button onClick={() => {
+                navigate('/signup');
+              }}>
                 Don't have an account? Sign Up
               </Button>
             </Grid>

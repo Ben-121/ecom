@@ -13,6 +13,7 @@ import { CartContext } from './context/CartContext';
 import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
 import { db, auth } from './firebase';
 
+
 function ProductItem({ item }) {
   const navigate = useNavigate();
   const { updateCartCount } = useContext(CartContext);
@@ -27,7 +28,7 @@ function ProductItem({ item }) {
 
     const userId = user.uid; // Use user's UID
     const cartRef = doc(db, 'cart', userId); // Reference to the cart collection
-    const activityRef = doc(db, 'activityHistory', userId); // Reference to the activity collection
+    const activityRef = doc(db, 'activityHistory', userId); 
 
     try {
       const cartDoc = await getDoc(cartRef);
@@ -46,7 +47,6 @@ function ProductItem({ item }) {
       }
       await setDoc(cartRef, { items: cartItems });
 
-      // Check if the activityHistory document exists, if not create it
       const activityDoc = await getDoc(activityRef);
       if (!activityDoc.exists()) {
         // If activity document doesn't exist, create it with the first activity
@@ -55,7 +55,7 @@ function ProductItem({ item }) {
             {
               ...item,
               action: 'added to cart',
-              timestamp: new Date().toLocaleString(), // Add timestamp to the activity entry
+              timestamp: new Date().toLocaleString(), 
             },
           ],
         });
@@ -86,7 +86,39 @@ function ProductItem({ item }) {
   };
 
   // Handle View Details action
-  const handleViewDetails = () => {
+  const handleViewDetails = async () => {
+    const user = auth.currentUser;
+
+    if (user) {
+      const userId = user.uid; 
+      const activityRef = doc(db, 'activityHistory', userId);
+
+      try {
+        const activityDoc = await getDoc(activityRef);
+        if (!activityDoc.exists()) {
+          await setDoc(activityRef, {
+            activities: [
+              {
+                ...item,
+                action: 'viewed product details',
+                timestamp: new Date().toLocaleString(),
+              },
+            ],
+          });
+        } else {
+          await updateDoc(activityRef, {
+            activities: arrayUnion({
+              ...item,
+              action: 'viewed product details',
+              timestamp: new Date().toLocaleString(),
+            }),
+          });
+        }
+      } catch (error) {
+        console.error('Error updating activity history:', error);
+      }
+    }
+
     navigate(`/productDetails/${item.id}`, { state: { product: item } });
   };
 

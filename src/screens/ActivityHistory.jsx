@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../components/Firebase'; // Import Firebase auth and Firestore
+import { auth, db } from '../components/firebase'; // Import Firebase auth and Firestore
 import { doc, onSnapshot } from 'firebase/firestore'; // Firestore real-time listener
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';

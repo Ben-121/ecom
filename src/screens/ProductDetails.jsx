@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { db, auth } from '../components/firebase'; // Import both Firestore and Auth from your Firebase setup
-import { collection, doc, getDoc, getDocs, addDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import './ProductDetails.css';
@@ -16,7 +16,7 @@ function ProductDetails() {
   const [reviewText, setReviewText] = useState(""); // Text of the review being written
   const [user, setUser] = useState(null); // Current authenticated user
   const [rating, setRating] = useState(5); // Rating value
-  
+
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
@@ -37,43 +37,45 @@ function ProductDetails() {
     const fetchReviews = async () => {
       try {
         const reviewsCollection = collection(db, `products/${productDetailsId}/reviews`);
-        const reviewSnapshot = await getDocs(reviewsCollection);
-        const fetchedReviews = reviewSnapshot.docs.map(doc => doc.data());
+        const reviewsCollectionDocs = await getDocs(reviewsCollection);
+        const fetchedReviews = reviewsCollectionDocs.docs.map(doc => doc.data());
         setReviews(fetchedReviews);
       } catch (error) {
         console.error("Error fetching reviews:", error);
       }
     };
 
-    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+    const fetchUserData = async () => {
+      const currentUser = auth.currentUser;
       if (currentUser) {
-        // Fetch user's first name from Firestore based on the provided format
-        const userDoc = doc(db, 'users', currentUser.uid);
-        const userSnapshot = await getDoc(userDoc);
+        try {
+          const userDoc = doc(db, 'users', currentUser.uid);
+          const userSnapshot = await getDoc(userDoc);
 
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.data();
-          setUser({
-            uid: currentUser.uid,
-            firstName: userData.firstName,
-          });
-        } else {
-          // If no user data in Firestore, fall back to default values
-          setUser({
-            uid: currentUser.uid,
-            firstName: "Anonymous",
-          });
+          if (userSnapshot.exists()) {
+            const userData = userSnapshot.data();
+            setUser({
+              uid: currentUser.uid,
+              firstName: userData.firstName,
+            });
+          } else {
+            setUser({
+              uid: currentUser.uid,
+              firstName: "Anonymous",
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
         }
       } else {
         setUser(null); // User is signed out
       }
-    });
+    };
 
     fetchProductDetails();
     fetchReviews();
+    fetchUserData();
 
-    // Cleanup the listener on component unmount
-    return () => unsubscribe();
   }, [productDetailsId]);
 
   const handleAddReview = async () => {
@@ -86,7 +88,6 @@ function ProductDetails() {
           productId: productDetailsId, // Reference to the product being reviewed
         };
 
-        // Optionally, you can store the review under the product's collection as well (for product-based fetching)
         const productReviewRef = doc(db, `products/${productDetailsId}/reviews`, user.uid);
         await setDoc(productReviewRef, {
           ...reviewData,

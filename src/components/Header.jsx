@@ -5,7 +5,7 @@ import {
   Toolbar,
   IconButton,
   Typography,
-  InputBase,
+  TextField,
   FormControl,
   Select,
   MenuItem,
@@ -23,14 +23,13 @@ import {
   History as HistoryIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
-// import { auth, db } from "./Firebase";
+import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import logo from "../assets/logo.png";
 import "./Header.css";
 import { CartContext } from "./context/CartContext";
-import { db, auth } from "./firebase";
 
-function Header({ onCategoryChange, setSearchQuery }) {
+function Header({  onCategoryChange, setSearchQuery }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -57,7 +56,7 @@ function Header({ onCategoryChange, setSearchQuery }) {
 
   useEffect(() => {
     fetchUserData();
-    
+  
   }, [setCartCount]);
 
   const toggleDrawer = (open) => () => {
@@ -122,11 +121,18 @@ function Header({ onCategoryChange, setSearchQuery }) {
               <MenuItem value="women's clothing">Women's Clothing</MenuItem>
             </Select>
           </FormControl>
-          <InputBase
-            placeholder="Search Items or Products"
-            onChange={handleSearchChange}
-            className="headerInput"
-          />
+          
+          <TextField
+          variant="outlined"
+          placeholder="Search Products"
+          onChange={handleSearchChange}
+          sx={{
+            backgroundColor: "white",
+            borderRadius: 1,
+            width: 400,
+          }}
+          size="small"
+        />
         </div>
 
         <div className="headerActions">
