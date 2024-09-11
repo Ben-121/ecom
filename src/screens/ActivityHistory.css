@@ -1,0 +1,14 @@
+.activity-history-container {
+    padding: 20px;
+  }
+  
+  .history-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .history-item {
+    margin-bottom: 20px;
+  }
+  

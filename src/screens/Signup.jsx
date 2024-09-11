@@ -1,0 +1,161 @@
+import React, { useState } from 'react';
+import { Container, TextField, Button, Grid, Typography, Box, Checkbox, FormControlLabel } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+// import { auth, db } from '../components/Firebase';
+import { setDoc, doc } from 'firebase/firestore';
+import { toast } from 'react-toastify';
+import { db,auth } from '../components/firebase';
+
+const Signup = () => {
+  const [firstName, setFirstName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mobileNumber, setMobileNumber] = useState(''); // Added state for mobile number
+  const [isSeller, setIsSeller] = useState(false);
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      alert("Passwords don't match");
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      const user = auth.currentUser;
+
+      if (user) {
+        await setDoc(doc(db, "users", user.uid), {
+          firstName: firstName,
+          email: user.email,
+          mobileNumber: mobileNumber, // Save the mobile number in Firestore
+          isSeller: isSeller,
+        });
+      }
+      navigate('/login');
+
+      console.log("User signed up:", user);
+      toast.success("Account Created Successfully", {
+        position: "top-center"
+      });
+    } catch (error) {
+      console.log("Error signing up:", error.message);
+      toast.error(error.message, {
+        position: "bottom-center"
+      });
+    }
+  };
+
+  const navigate = useNavigate();
+
+  return (
+    <Container maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Typography component="h1" variant="h5">
+          Sign Up
+        </Typography>
+        <Box component="form" onSubmit={handleSignup} sx={{ mt: 1 }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="firstName"
+            label="First Name"
+            name="firstName"
+            autoComplete="given-name"
+            autoFocus
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="mobileNumber"
+            label="Mobile Number" // Input for mobile number
+            name="mobileNumber"
+            autoComplete="tel"
+            value={mobileNumber}
+            onChange={(e) => setMobileNumber(e.target.value)}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Password"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            id="confirm-password"
+            autoComplete="confirm-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isSeller}
+                onChange={(e) => setIsSeller(e.target.checked)}
+                name="isSeller"
+                color="primary"
+              />
+            }
+            label="Are you a seller?"
+          />
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+          >
+            Sign Up
+          </Button>
+
+          <Grid container justifyContent="flex-end">
+            <Grid item>
+              <Button onClick={() => navigate('/login')}>
+                Already have an account? Login
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
+    </Container>
+  );
+};
+
+export default Signup;

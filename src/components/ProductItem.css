@@ -1,0 +1,60 @@
+.productItem {
+    background-color: white;
+    margin: 10px;
+    padding: 10px;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.productItembutton,
+.productbuybutton,
+.viewDetailsButton {
+    width: 100%; /* Make the buttons take full width */
+    padding: 12px 0; /* Add vertical padding for better spacing */
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    color: black;
+    transition: background-color 0.3s, transform 0.2s;
+    display: block; /* Ensure the buttons are block-level elements */
+    text-align: center; /* Center text inside the buttons */
+}
+
+.productItembutton {
+    background-color: #FEBE10;
+}
+
+.productItembutton:hover {
+    background-color: #f4a300;
+    transform: scale(1.05);
+}
+
+.productbuybutton {
+    background-color: #FFD700;
+}
+
+.productbuybutton:hover {
+    background-color: #e0c600;
+    transform: scale(1.05);
+}
+
+.viewDetailsButton {
+    background-color: #E0E0E0;
+}
+
+.viewDetailsButton:hover {
+    background-color: #c0c0c0;
+    transform: scale(1.05);
+}
+
+.product-actions {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 10px; /* Space between buttons */
+    margin-top: 10px;
+}
