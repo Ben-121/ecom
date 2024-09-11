@@ -86,10 +86,6 @@ function ProductDetails() {
           productId: productDetailsId, // Reference to the product being reviewed
         };
 
-        // // Store review in user's subcollection "reviews" using uid
-        // const userReviewRef = doc(db, `users/${user.uid}/reviews`, productDetailsId);
-        // await setDoc(userReviewRef, reviewData); // Set the review with the product ID as the document ID
-
         // Optionally, you can store the review under the product's collection as well (for product-based fetching)
         const productReviewRef = doc(db, `products/${productDetailsId}/reviews`, user.uid);
         await setDoc(productReviewRef, {

@@ -57,8 +57,7 @@ function Header({ onCategoryChange, setSearchQuery }) {
 
   useEffect(() => {
     fetchUserData();
-    const storedCartItems = JSON.parse(localStorage.getItem("cartItems")) || [];
-    setCartCount(storedCartItems.length);
+    
   }, [setCartCount]);
 
   const toggleDrawer = (open) => () => {

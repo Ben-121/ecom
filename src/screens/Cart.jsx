@@ -2,8 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Cart.css';
 import { CartContext } from '../components/context/CartContext';
-import { auth, db } from '../components/Firebase'; // Import Firebase
+// import { auth, db } from '../components/Firebase'; // Import Firebase
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
+import { db, auth } from '../components/firebase';
+
 
 function Cart() {
   const navigate = useNavigate();
