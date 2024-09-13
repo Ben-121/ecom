@@ -1,64 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../components/firebase'; // Import Firebase auth and Firestore
-import { doc, onSnapshot } from 'firebase/firestore'; // Firestore real-time listener
+import { auth, db } from '../components/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
-import Button from '@mui/material/Button'; // Import Button for sorting
+import Button from '@mui/material/Button';
 import './ActivityHistory.css';
 
 function ActivityHistory() {
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true); // Loading state
-  const [sortOrder, setSortOrder] = useState('asc'); // State to track sorting order
+  const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => {
-    const unsubscribeFromAuth = auth.onAuthStateChanged((user) => {
+    const fetchActivityHistory = async () => {
+      const user = auth.currentUser;
       if (user) {
-        const userId = user.uid; // Get user UID
-        const activityRef = doc(db, 'activityHistory', userId); // Reference to the user's activity in Firestore
+        const userId = user.uid;
+        const activityRef = doc(db, 'activityHistory', userId);
 
-        // Real-time listener to fetch activity history from Firestore
-        const unsubscribeFromSnapshot = onSnapshot(activityRef, (docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const activities = docSnapshot.data().activities || []; // Fetch 'activities' array
-            setHistory(activities); // Set the history state with the fetched activities
+        try {
+          const docSnap = await getDoc(activityRef);
+          if (docSnap.exists()) {
+            const activities = docSnap.data().activities || [];
+            setHistory(activities);
           } else {
-            setHistory([]); // No activity found
+            setHistory([]);
           }
-          setLoading(false); // Stop loading once data is fetched
-        });
-
-        // Cleanup Firestore listener when component unmounts
-        return () => unsubscribeFromSnapshot();
+        } catch (error) {
+          console.error("Error fetching activity history:", error);
+        } finally {
+          setLoading(false);
+        }
       } else {
-        setLoading(false); // Stop loading if no user is authenticated
+        setLoading(false);
       }
-    });
+    };
 
-    // Cleanup auth listener when component unmounts
-    return () => unsubscribeFromAuth();
+    fetchActivityHistory();
   }, []);
 
-  // Function to sort history based on timestamp
   const sortHistoryByTimestamp = (order) => {
     const sortedHistory = [...history].sort((a, b) => {
       const dateA = new Date(a.timestamp);
       const dateB = new Date(b.timestamp);
 
       if (order === 'asc') {
-        return dateA - dateB; // Ascending order
+        return dateA - dateB;
       } else {
-        return dateB - dateA; // Descending order
+        return dateB - dateA;
       }
     });
 
-    setHistory(sortedHistory); // Update the history state with the sorted data
+    setHistory(sortedHistory);
   };
 
-  // Toggle sort order and call the sorting function
   const handleSortToggle = () => {
     const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(newOrder);
@@ -68,8 +66,6 @@ function ActivityHistory() {
   return (
     <div className="activity-history-container">
       <h2>Activity History</h2>
-      
-      {/* Sort Button */}
       <Button 
         variant="contained" 
         color="primary" 
@@ -80,7 +76,7 @@ function ActivityHistory() {
       </Button>
 
       {loading ? (
-        <div>Loading...</div> // Show loading indicator while waiting for data
+        <div>Loading...</div>
       ) : history.length > 0 ? (
         <div className="history-grid">
           {history.map((item, index) => (

@@ -106,7 +106,10 @@
         </div>
 
         {loading ? (
-          <CircularProgress />
+              <div className="loading-container">
+
+          <CircularProgress/>
+          </div>
         ) : error ? (
           <>
             <Typography color="error">Failed to load products. Please try again later.</Typography>

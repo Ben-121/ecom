@@ -11,8 +11,8 @@
 .productItembutton,
 .productbuybutton,
 .viewDetailsButton {
-    width: 100%; /* Make the buttons take full width */
-    padding: 12px 0; /* Add vertical padding for better spacing */
+    width: 100%;
+    padding: 12px 0;
     border: none;
     font-size: 16px;
     font-weight: 500;
@@ -21,8 +21,8 @@
     text-decoration: none;
     color: black;
     transition: background-color 0.3s, transform 0.2s;
-    display: block; /* Ensure the buttons are block-level elements */
-    text-align: center; /* Center text inside the buttons */
+    display: block;
+    text-align: center;
 }
 
 .productItembutton {
@@ -54,7 +54,7 @@
 
 .product-actions {
     display: flex;
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 10px; /* Space between buttons */
+    flex-direction: column;
+    gap: 10px;
     margin-top: 10px;
 }

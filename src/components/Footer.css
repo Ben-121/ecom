@@ -1,0 +1,45 @@
+/* Footer.css */
+
+.footer {
+    background-color: #f8f9fa;
+    padding: 20px 0;
+    margin-top: auto; /* Ensure the footer stays at the bottom */
+  }
+  
+  .footerContent {
+    text-align: center; /* Center-align the footer content */
+  }
+  
+  .footerLinks {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .footerLinks li {
+    margin-bottom: 10px;
+  }
+  
+  .footerLinks a {
+    color: #333;
+    text-decoration: none;
+  }
+  
+  .footerLinks a:hover {
+    text-decoration: underline;
+  }
+  
+  .socialMediaIcons {
+    display: flex;
+    justify-content: center; /* Center-align the social media icons */
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .socialMediaIcons .MuiIconButton-root {
+    color: #333;
+  }
+  
+  .socialMediaIcons .MuiIconButton-root:hover {
+    color: #007bff;
+  }
+  

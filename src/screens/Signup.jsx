@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Grid, Typography, Box, Checkbox, FormControlLabel } from '@mui/material';
+import { Container, TextField, Button, Grid, Typography, Box, Checkbox, FormControlLabel, FormHelperText } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-// import { auth, db } from '../components/Firebase';
 import { setDoc, doc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import { db,auth } from '../components/firebase';
+import { db, auth } from '../components/firebase';
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [mobileNumber, setMobileNumber] = useState(''); // Added state for mobile number
+  const [mobileNumber, setMobileNumber] = useState('');
   const [isSeller, setIsSeller] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    
+    // Validate password length
+    if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters long");
+      return;
+    } else {
+      setPasswordError('');
+    }
 
     if (password !== confirmPassword) {
-      alert("Passwords don't match");
+      toast.error("Passwords don't match", {
+        position: "bottom-center"
+      });
       return;
     }
 
@@ -31,7 +43,7 @@ const Signup = () => {
         await setDoc(doc(db, "users", user.uid), {
           firstName: firstName,
           email: user.email,
-          mobileNumber: mobileNumber, // Save the mobile number in Firestore
+          mobileNumber: mobileNumber,
           isSeller: isSeller,
         });
       }
@@ -48,8 +60,6 @@ const Signup = () => {
       });
     }
   };
-
-  const navigate = useNavigate();
 
   return (
     <Container maxWidth="xs">
@@ -93,7 +103,7 @@ const Signup = () => {
             required
             fullWidth
             id="mobileNumber"
-            label="Mobile Number" // Input for mobile number
+            label="Mobile Number"
             name="mobileNumber"
             autoComplete="tel"
             value={mobileNumber}
@@ -110,6 +120,8 @@ const Signup = () => {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={!!passwordError}
+            helperText={passwordError}
           />
           <TextField
             margin="normal"

@@ -19,6 +19,9 @@ import ActivityHistory from "./screens/ActivityHistory";
 import { CartProvider } from "./components/context/CartContext";
 import Seller from "./screens/Seller";
 import { HeaderLayout, LoginsignupLayout } from "./Route";
+import FAQPage from "./screens/FAQPage";
+import PrivacyPolicyPage from "./screens/PrivacyPolicyPage";
+import TermsAndConditions from "./screens/TermsAndConditions";
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -66,6 +69,10 @@ function App() {
             <Route path="/payment" element={<Payment />} />
             <Route path="/productDetails/:productDetailsId" element={<ProductDetails />} />
             <Route path="/seller" element={<Seller />} />
+            <Route path="/faq1" element={<FAQPage />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
           </Route>
         </Routes>
       </Router>

@@ -16,12 +16,16 @@ import {
   ListItemText,
   Menu,
   MenuItem as MUI_MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   ShoppingCart as ShoppingCartIcon,
   Menu as MenuIcon,
   History as HistoryIcon,
   Person as PersonIcon,
+  ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -29,35 +33,45 @@ import logo from "../assets/logo.png";
 import "./Header.css";
 import { CartContext } from "./context/CartContext";
 
-function Header({  onCategoryChange, setSearchQuery }) {
+function Header({ onCategoryChange, setSearchQuery }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [userDetails, setUserDetails] = useState(null);
+  const [userDetails, setUserDetails] = useState({
+    name: "Guest",
+    mobileNumber: "",
+  });
   const [selectedCategory, setSelectedCategory] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const openProfileMenu = Boolean(anchorEl);
   const navigate = useNavigate();
-  const { cartCount, setCartCount } = useContext(CartContext);
+  const { cartCount } = useContext(CartContext);
+
+  const fetchUserData = async (user) => {
+    if (user) {
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserDetails({
+          name: data.firstName || "Guest",
+          mobileNumber: data.mobileNumber || "",
+        });
+      }
+    } else {
+      setUserDetails({ name: "Guest", mobileNumber: "" });
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      await fetchUserData(user);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
-
-  const fetchUserData = async () => {
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUserDetails(docSnap.data());
-        }
-      }
-    });
-  };
-
-  useEffect(() => {
-    fetchUserData();
-  
-  }, [setCartCount]);
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -82,11 +96,19 @@ function Header({  onCategoryChange, setSearchQuery }) {
     setAnchorEl(null);
   };
 
-  async function handleLogout() {
-    await auth.signOut();
-    window.location.href = "./login";
-    console.log("logged out success");
-  }
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      console.log("Logged out successfully");
+      window.location.replace("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
+  const handleLogin = () => {
+    window.location.replace("/login");
+  };
 
   return (
     <AppBar position="static" className="header">
@@ -121,25 +143,22 @@ function Header({  onCategoryChange, setSearchQuery }) {
               <MenuItem value="women's clothing">Women's Clothing</MenuItem>
             </Select>
           </FormControl>
-          
+
           <TextField
-          variant="outlined"
-          placeholder="Search Products"
-          onChange={handleSearchChange}
-          sx={{
-            backgroundColor: "white",
-            borderRadius: 1,
-            width: 400,
-          }}
-          size="small"
-        />
+            variant="outlined"
+            placeholder="Search Products"
+            onChange={handleSearchChange}
+            sx={{
+              backgroundColor: "white",
+              borderRadius: 1,
+              width: 400,
+            }}
+            size="small"
+          />
         </div>
 
         <div className="headerActions">
-          <IconButton
-            color="inherit"
-            onClick={() => navigate("/activityhistory")}
-          >
+          <IconButton color="inherit" onClick={() => navigate("/activityhistory")}>
             <HistoryIcon />
           </IconButton>
           <IconButton color="inherit" onClick={() => navigate("/cart")}>
@@ -147,11 +166,7 @@ function Header({  onCategoryChange, setSearchQuery }) {
               <ShoppingCartIcon />
             </Badge>
           </IconButton>
-          <IconButton
-            edge="end"
-            color="inherit"
-            onClick={handleProfileMenuOpen}
-          >
+          <IconButton edge="end" color="inherit" onClick={handleProfileMenuOpen}>
             <PersonIcon />
           </IconButton>
           <IconButton edge="end" color="inherit" onClick={toggleDrawer(true)}>
@@ -161,15 +176,79 @@ function Header({  onCategoryChange, setSearchQuery }) {
       </Toolbar>
 
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-        <List>
-          <ListItem button onClick={handleLogout}>
-            <ListItemText primary="Logout" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigate("/aboutus")}>
-            <ListItemText primary="About Us" />
-          </ListItem>
-          {/* Add other drawer items here */}
-        </List>
+        <div className="drawerContainer">
+          <List>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <ListItemText primary="Shop by Category" />
+              </AccordionSummary>
+              <AccordionDetails>
+                <List>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Categories" />
+                  </ListItem>
+                </List>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <ListItemText primary="Offers" />
+              </AccordionSummary>
+              <AccordionDetails>
+                <List>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Discounts" />
+                  </ListItem>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Flash Sales" />
+                  </ListItem>
+                </List>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <ListItemText primary="Brands" />
+              </AccordionSummary>
+              <AccordionDetails>
+                <List>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Apple" />
+                  </ListItem>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Samsung" />
+                  </ListItem>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Nike" />
+                  </ListItem>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Adidas" />
+                  </ListItem>
+                </List>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <ListItemText primary="Customer Service" />
+              </AccordionSummary>
+              <AccordionDetails>
+                <List>
+                  <ListItem button onClick={() => handleNavigate("/faq1")}>
+                    <ListItemText primary="FAQ" />
+                  </ListItem>
+                  <ListItem button onClick={() => handleNavigate("/")}>
+                    <ListItemText primary="Returns" />
+                  </ListItem>
+                  <ListItem button onClick={() => handleNavigate("/contact")}>
+                    <ListItemText primary="Contact Us" />
+                  </ListItem>
+                </List>
+              </AccordionDetails>
+            </Accordion>
+          </List>
+        </div>
       </Drawer>
 
       <Menu
@@ -180,20 +259,27 @@ function Header({  onCategoryChange, setSearchQuery }) {
         {userDetails && (
           <>
             <MUI_MenuItem>
-              <Typography variant="body1">
-                {userDetails.name}
-              </Typography>
+              <Typography variant="body1">{userDetails.name}</Typography>
             </MUI_MenuItem>
-            <MUI_MenuItem>
-              <Typography variant="body2" color="textSecondary">
-                {userDetails.mobileNumber}
-              </Typography>
-            </MUI_MenuItem>
-            <MUI_MenuItem onClick={handleLogout}>
-              <Typography variant="body2" color="error">
-                Logout
-              </Typography>
-            </MUI_MenuItem>
+            {userDetails.name !== "Guest" && (
+              <MUI_MenuItem>
+                <Typography variant="body2">
+                  {userDetails.mobileNumber}
+                </Typography>
+              </MUI_MenuItem>
+            )}
+            {userDetails.name === "Guest" && (
+              <MUI_MenuItem onClick={handleLogin} style={{ color: 'red' }}>
+                <Typography variant="body2">Login</Typography>
+              </MUI_MenuItem>
+            )}
+            {userDetails.name !== "Guest" && (
+              <MUI_MenuItem onClick={handleLogout}>
+                <Typography variant="body2" color="error">
+                  Logout
+                </Typography>
+              </MUI_MenuItem>
+            )}
           </>
         )}
       </Menu>
@@ -203,51 +289,30 @@ function Header({  onCategoryChange, setSearchQuery }) {
           <Typography
             variant="body1"
             className="headerBottomText"
-            onClick={() => navigate("/electronics")}
+            onClick={() => navigate("/")}
           >
             Electronics
           </Typography>
           <Typography
             variant="body1"
             className="headerBottomText"
-            onClick={() => navigate("/monitor")}
+            onClick={() => navigate("/")}
           >
-            Monitors
+            Jewelry
           </Typography>
           <Typography
             variant="body1"
             className="headerBottomText"
-            onClick={() => navigate("/casual")}
+            onClick={() => navigate("/")}
           >
-            Casual Wear
+            Men's Clothing
           </Typography>
           <Typography
             variant="body1"
             className="headerBottomText"
-            onClick={() => navigate("/jewellery")}
+            onClick={() => navigate("/")}
           >
-            Jewellery
-          </Typography>
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/men")}
-          >
-            Men Wear
-          </Typography>
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/Bags")}
-          >
-            Bags
-          </Typography>
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/women")}
-          >
-            Women's Wear
+            Women's Clothing
           </Typography>
         </div>
       </div>
