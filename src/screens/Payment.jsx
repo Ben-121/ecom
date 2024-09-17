@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardMedia, Typography, Button, Grid } from '@mui/material';
+import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../components/Firebase'; // Assuming you have Firebase authentication and Firestore setup here
 import './Payment.css';
 
 function Payment() {
@@ -13,6 +15,59 @@ function Payment() {
   // Calculate total amount
   const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
+  // States for user details
+  const [userName, setUserName] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [userAddress, setUserAddress] = useState('');
+  const [userId, setUserId] = useState('');
+
+  // Fetch user details from Firestore
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        setUserId(currentUser.uid); // Store the user's UID
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserName(userData.firstName + " " + userData.lastName);
+          setUserPhone(userData.mobileNumber);
+          setUserAddress(userData.address || "No address available");
+        }
+      }
+    };
+    fetchUserDetails();
+  }, []);
+
+  // Generate a unique 6-digit order ID
+  const generateOrderId = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit number
+  };
+
+  const storeOrderDetails = async (paymentId, orderId) => {
+    try {
+      const orderData = {
+        orderId,
+        paymentId,
+        cartItems,
+        totalAmount,
+        userName,
+        userPhone,
+        userAddress,
+        userId, // Store the userId (UID) for each order
+        createdAt: new Date(),
+      };
+
+      await addDoc(collection(db, "orders"), orderData);
+      alert("Order placed successfully!");
+
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error("Error storing order details: ", error);
+      alert("There was an issue storing the order details. Please try again.");
+    }
+  };
+
   // Razorpay payment integration
   const loadRazorpay = () => {
     const script = document.createElement("script");
@@ -22,9 +77,10 @@ function Payment() {
     };
     script.onload = async () => {
       try {
+        const orderId = generateOrderId(); // Generate the unique order ID
         const options = {
           key: "rzp_test_DT1FmIE6tqtiAQ", // Replace this with your Razorpay key
-          amount: totalAmount * 100, // Convert to paise (1 INR = 100 paise)
+          amount: totalAmount * 100, 
           currency: "INR",
           name: "Your Shop Name",
           description: "Test Transaction",
@@ -32,15 +88,17 @@ function Payment() {
           handler: function (response) {
             // Handle successful payment here
             alert("Payment successful! Payment ID: " + response.razorpay_payment_id);
-            navigate('/', { replace: true }); // Redirect to home after payment
+
+            // Store the order details in Firestore after payment success
+            storeOrderDetails(response.razorpay_payment_id, orderId);
           },
           prefill: {
-            name: "John Doe", // Pre-fill the customer's name
+            name: userName,
             email: "john.doe@example.com",
-            contact: "9999999999"
+            contact: userPhone
           },
           notes: {
-            address: "Razorpay Corporate Office"
+            address: userAddress
           },
           theme: {
             color: "#F37254"

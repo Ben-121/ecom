@@ -13,6 +13,7 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [isSeller, setIsSeller] = useState(false);
+  const [address, setAddress] = useState(''); // New state for address
   const [passwordError, setPasswordError] = useState('');
 
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ const Signup = () => {
           firstName: firstName,
           email: user.email,
           mobileNumber: mobileNumber,
+          address: address, // Save address
           isSeller: isSeller,
         });
       }
@@ -134,6 +136,19 @@ const Signup = () => {
             autoComplete="confirm-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+
+          {/* Address Field */}
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="address"
+            label="Address"
+            id="address"
+            autoComplete="street-address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
           />
 
           <FormControlLabel

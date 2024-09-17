@@ -16,16 +16,12 @@ import {
   ListItemText,
   Menu,
   MenuItem as MUI_MenuItem,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from "@mui/material";
 import {
   ShoppingCart as ShoppingCartIcon,
   Menu as MenuIcon,
   History as HistoryIcon,
   Person as PersonIcon,
-  ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -158,7 +154,10 @@ function Header({ onCategoryChange, setSearchQuery }) {
         </div>
 
         <div className="headerActions">
-          <IconButton color="inherit" onClick={() => navigate("/activityhistory")}>
+          <IconButton
+            color="inherit"
+            onClick={() => navigate("/activityhistory")}
+          >
             <HistoryIcon />
           </IconButton>
           <IconButton color="inherit" onClick={() => navigate("/cart")}>
@@ -166,7 +165,11 @@ function Header({ onCategoryChange, setSearchQuery }) {
               <ShoppingCartIcon />
             </Badge>
           </IconButton>
-          <IconButton edge="end" color="inherit" onClick={handleProfileMenuOpen}>
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={handleProfileMenuOpen}
+          >
             <PersonIcon />
           </IconButton>
           <IconButton edge="end" color="inherit" onClick={toggleDrawer(true)}>
@@ -178,75 +181,14 @@ function Header({ onCategoryChange, setSearchQuery }) {
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
         <div className="drawerContainer">
           <List>
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <ListItemText primary="Shop by Category" />
-              </AccordionSummary>
-              <AccordionDetails>
-                <List>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Categories" />
-                  </ListItem>
-                </List>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <ListItemText primary="Offers" />
-              </AccordionSummary>
-              <AccordionDetails>
-                <List>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Discounts" />
-                  </ListItem>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Flash Sales" />
-                  </ListItem>
-                </List>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <ListItemText primary="Brands" />
-              </AccordionSummary>
-              <AccordionDetails>
-                <List>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Apple" />
-                  </ListItem>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Samsung" />
-                  </ListItem>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Nike" />
-                  </ListItem>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Adidas" />
-                  </ListItem>
-                </List>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <ListItemText primary="Customer Service" />
-              </AccordionSummary>
-              <AccordionDetails>
-                <List>
-                  <ListItem button onClick={() => handleNavigate("/faq1")}>
-                    <ListItemText primary="FAQ" />
-                  </ListItem>
-                  <ListItem button onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Returns" />
-                  </ListItem>
-                  <ListItem button onClick={() => handleNavigate("/contact")}>
-                    <ListItemText primary="Contact Us" />
-                  </ListItem>
-                </List>
-              </AccordionDetails>
-            </Accordion>
+            {userDetails.name !== "Guest" && (
+              <ListItem button onClick={() => handleNavigate("/profile")}>
+                <ListItemText primary="Profile" />
+              </ListItem>
+            )}
+            <ListItem button onClick={() => handleNavigate("/orders")}>
+              <ListItemText primary="Recent Orders" />
+            </ListItem>
           </List>
         </div>
       </Drawer>
@@ -269,7 +211,7 @@ function Header({ onCategoryChange, setSearchQuery }) {
               </MUI_MenuItem>
             )}
             {userDetails.name === "Guest" && (
-              <MUI_MenuItem onClick={handleLogin} style={{ color: 'red' }}>
+              <MUI_MenuItem onClick={handleLogin} style={{ color: "red" }}>
                 <Typography variant="body2">Login</Typography>
               </MUI_MenuItem>
             )}
@@ -283,39 +225,6 @@ function Header({ onCategoryChange, setSearchQuery }) {
           </>
         )}
       </Menu>
-
-      <div className="headerBottomContainer">
-        <div className="headerBottom">
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/")}
-          >
-            Electronics
-          </Typography>
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/")}
-          >
-            Jewelry
-          </Typography>
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/")}
-          >
-            Men's Clothing
-          </Typography>
-          <Typography
-            variant="body1"
-            className="headerBottomText"
-            onClick={() => navigate("/")}
-          >
-            Women's Clothing
-          </Typography>
-        </div>
-      </div>
     </AppBar>
   );
 }
