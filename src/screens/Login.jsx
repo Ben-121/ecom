@@ -3,7 +3,7 @@ import { Container, TextField, Button, Grid, Typography, Box } from '@mui/materi
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../components/firebase'; // assuming you have exported 'db' from your Firebase config
+import { auth, db } from '../components/Firebase'; // assuming you have exported 'db' from your Firebase config
 import { toast } from 'react-toastify';
 
 const Login = () => {

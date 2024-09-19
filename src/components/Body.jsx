@@ -4,7 +4,7 @@ import { ArrowUpward, ArrowDownward } from "@mui/icons-material";
 import ProductItem from "./ProductItem";
 import "./Body.css";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { db, auth } from "./firebase"; // Import Firebase auth
+import { db, auth } from "./Firebase"; // Import Firebase auth
 import { useNavigate } from "react-router-dom";
 
 function Body({ category, searchQuery }) {

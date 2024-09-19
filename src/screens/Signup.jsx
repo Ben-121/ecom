@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import { db, auth } from '../components/firebase';
+import { db, auth } from '../components/Firebase';
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');

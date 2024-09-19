@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { db, auth } from '../components/firebase'; // Import both Firestore and Auth from your Firebase setup
+import { db, auth } from '../components/Firebase'; // Import both Firestore and Auth from your Firebase setup
 import { collection, doc, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';

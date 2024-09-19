@@ -23,7 +23,7 @@ import {
   History as HistoryIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
-import { auth, db } from "./firebase";
+import { auth, db } from "./Firebase";
 import { doc, getDoc } from "firebase/firestore";
 import logo from "../assets/logo.png";
 import "./Header.css";
