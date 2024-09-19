@@ -3,7 +3,12 @@ import { Container, TextField, Button, Grid, Typography, Box, Alert, CircularPro
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
+<<<<<<< HEAD
 import { auth, db } from '../components/firebase';
+=======
+import { auth, db } from '../components/Firebase'; // assuming you have exported 'db' from your Firebase config
+import { toast } from 'react-toastify';
+>>>>>>> c9f1364582cf86b1fcd8177cc29fe393688ff8ac
 
 const Login = () => {
   const [email, setEmail] = useState('');

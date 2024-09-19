@@ -12,7 +12,7 @@ import {
   IconButton,
 } from "@mui/material";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
-import { db, auth } from "../components/firebase"; // Make sure Firebase auth is imported
+import { db, auth } from "../components/Firebase"; // Make sure Firebase auth is imported
 import { useNavigate } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";

@@ -11,7 +11,7 @@ import './ProductItem.css';
 import { CartContext } from './context/CartContext';
 // import { auth,  } from '..components/Firebase'; // Firebase auth and Firestore
 import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
-import { db, auth } from './firebase';
+import { db, auth } from './Firebase';
 
 
 function ProductItem({ item }) {

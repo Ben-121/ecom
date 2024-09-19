@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Container, Typography, Box, TextField, Button, CircularProgress } from "@mui/material";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "../components/firebase";
+import { auth, db } from "../components/Firebase";
 import { updatePassword } from "firebase/auth"; // For changing password
 import { toast } from 'react-toastify'; // Optional: For better notifications
 

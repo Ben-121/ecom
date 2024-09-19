@@ -4,7 +4,7 @@ import './Cart.css';
 import { CartContext } from '../components/context/CartContext';
 // import { auth, db } from '../components/Firebase'; // Import Firebase
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
-import { db, auth } from '../components/firebase';
+import { db, auth } from '../components/Firebase';
 
 
 function Cart() {
