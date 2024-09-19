@@ -56,14 +56,15 @@ function Header({ onCategoryChange, setSearchQuery }) {
       setUserDetails({ name: "Guest", mobileNumber: "" });
     }
   };
-
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      await fetchUserData(user);
-    });
-
-    return () => unsubscribe();
+    const setDocs = async () => {
+      const user = auth.currentUser;
+      await fetchUserData(user);   
+    };
+  
+    setDocs(); 
   }, []);
+  
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);

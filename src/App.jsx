@@ -9,6 +9,8 @@ import Signup from "./screens/Signup";
 import Body from "./components/Body";
 import Men from "./screens/path/Men";
 import Women from "./screens/path/Women";
+import Profile from './screens/Profile';
+
 import Casual from "./screens/path/Casual";
 import Jewellery from "./screens/path/Jewellery";
 import Electronics from "./screens/path/Electronics";
@@ -22,6 +24,7 @@ import { HeaderLayout, LoginsignupLayout } from "./Route";
 import FAQPage from "./screens/FAQPage";
 import PrivacyPolicyPage from "./screens/PrivacyPolicyPage";
 import TermsAndConditions from "./screens/TermsAndConditions";
+import RecentOrders from "./screens/Order";
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -71,6 +74,8 @@ function App() {
             <Route path="/seller" element={<Seller />} />
             <Route path="/faq1" element={<FAQPage />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/profile" element={<Profile />} />
+        <Route path="/orders" element={<RecentOrders />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
           </Route>
