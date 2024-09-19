@@ -9,6 +9,8 @@ import Signup from "./screens/Signup";
 import Body from "./components/Body";
 import Men from "./screens/path/Men";
 import Women from "./screens/path/Women";
+import Profile from './screens/Profile';
+import RecentOrders from './screens/Orders';
 import Casual from "./screens/path/Casual";
 import Jewellery from "./screens/path/Jewellery";
 import Electronics from "./screens/path/Electronics";
@@ -71,6 +73,8 @@ function App() {
             <Route path="/seller" element={<Seller />} />
             <Route path="/faq1" element={<FAQPage />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/profile" element={<Profile />} />
+        <Route path="/orders" element={<RecentOrders />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
           </Route>
