@@ -41,30 +41,34 @@ function Header({ onCategoryChange, setSearchQuery }) {
   const navigate = useNavigate();
   const { cartCount } = useContext(CartContext);
 
-  const fetchUserData = async (user) => {
-    if (user) {
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setUserDetails({
-          name: data.firstName || "Guest",
-          mobileNumber: data.mobileNumber || "",
-        });
-      }
-    } else {
-      setUserDetails({ name: "Guest", mobileNumber: "" });
+  // Fetch user data from Firestore
+  const fetchUserData = async (uid) => {
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      setUserDetails({
+        name: data.firstName || "Guest",
+        mobileNumber: data.mobileNumber || "",
+      });
     }
   };
+
   useEffect(() => {
-    const setDocs = async () => {
-      const user = auth.currentUser;
-      await fetchUserData(user);   
-    };
-  
-    setDocs(); 
+    const user = auth.currentUser;
+
+    if (!user && localStorage.getItem("userEmail")) {
+      const storedEmail = localStorage.getItem("userEmail");
+
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          fetchUserData(user.uid);
+        }
+      });
+    } else if (user) {
+      fetchUserData(user.uid);
+    }
   }, []);
-  
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -96,6 +100,7 @@ function Header({ onCategoryChange, setSearchQuery }) {
   const handleLogout = async () => {
     try {
       await auth.signOut();
+      localStorage.removeItem("userEmail"); // Clear email from localStorage on logout
       console.log("Logged out successfully");
       window.location.replace("/login");
     } catch (error) {
@@ -118,41 +123,43 @@ function Header({ onCategoryChange, setSearchQuery }) {
           <img src={logo} alt="logo" className="logo" />
         </IconButton>
 
-        <div className="headerInputContainer">
-          <FormControl
-            variant="outlined"
-            className="categorySelect"
-            style={{ width: "140px", marginRight: "8px" }}
-          >
-            <Select
-              value={selectedCategory}
-              onChange={handleCategoryChange}
-              label="Category"
-              style={{
-                border: "2px solid #333",
-                borderRadius: "4px",
-              }}
+        {window.location.pathname === "/" && ( // manually check the path and render thhe child comp
+          <div className="headerInputContainer">
+            <FormControl
+              variant="outlined"
+              className="categorySelect"
+              style={{ width: "140px", marginRight: "8px" }}
             >
-              <MenuItem value="">All Categories</MenuItem>
-              <MenuItem value="electronics">Electronics</MenuItem>
-              <MenuItem value="jewelery">Jewelry</MenuItem>
-              <MenuItem value="men's clothing">Men's Clothing</MenuItem>
-              <MenuItem value="women's clothing">Women's Clothing</MenuItem>
-            </Select>
-          </FormControl>
+              <Select
+                value={selectedCategory}
+                onChange={handleCategoryChange}
+                label="Category"
+                style={{
+                  border: "2px solid #333",
+                  borderRadius: "4px",
+                }}
+              >
+                <MenuItem value="">All Categories</MenuItem>
+                <MenuItem value="electronics">Electronics</MenuItem>
+                <MenuItem value="jewelery">Jewelry</MenuItem>
+                <MenuItem value="men's clothing">Men's Clothing</MenuItem>
+                <MenuItem value="women's clothing">Women's Clothing</MenuItem>
+              </Select>
+            </FormControl>
 
-          <TextField
-            variant="outlined"
-            placeholder="Search Products"
-            onChange={handleSearchChange}
-            sx={{
-              backgroundColor: "white",
-              borderRadius: 1,
-              width: 400,
-            }}
-            size="small"
-          />
-        </div>
+            <TextField
+              variant="outlined"
+              placeholder="Search Products"
+              onChange={handleSearchChange}
+              sx={{
+                backgroundColor: "white",
+                borderRadius: 1,
+                width: 400,
+              }}
+              size="small"
+            />
+          </div>
+        )}
 
         <div className="headerActions">
           <IconButton

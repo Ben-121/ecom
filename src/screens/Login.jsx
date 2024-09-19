@@ -1,43 +1,62 @@
-import React, { useState } from 'react';
-import { Container, TextField, Button, Grid, Typography, Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Container, TextField, Button, Grid, Typography, Box, Alert, CircularProgress, FormControlLabel, Checkbox } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../components/firebase'; // assuming you have exported 'db' from your Firebase config
-import { toast } from 'react-toastify';
+import { auth, db } from '../components/firebase';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       const user = auth.currentUser;
 
-      // Fetch user data from Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming "users" is your collection name
+      const userDoc = await getDoc(doc(db, "users", user.uid));
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log(userData);
 
-        // Check if the user is a seller
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+
         if (userData.isSeller) {
-          navigate('/seller');
+          setTimeout(() => {
+            setLoading(false);
+            navigate('/');
+          }, 500);
         } else {
           navigate('/');
         }
       } else {
         console.log("No such document!");
+        setLoading(false);
       }
     } catch (error) {
-      console.log(error.message);
-      toast.error(error.message, {
-        position: 'bottom-center',
-      });
+      console.error(error.message);
+      setError('Invalid email or password. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -55,6 +74,11 @@ const Login = () => {
           Login
         </Typography>
         <Box component="form" onSubmit={handleLogin} sx={{ mt: 1 }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           <TextField
             margin="normal"
             required
@@ -79,19 +103,27 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Login
-          </Button>
+          <FormControlLabel
+            control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />}
+            label="Remember me"
+          />
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Login
+            </Button>
+          )}
           <Grid container justifyContent="flex-end">
             <Grid item>
-              <Button onClick={() => {
-                navigate('/signup');
-              }}>
+              <Button onClick={() => navigate('/signup')}>
                 Don't have an account? Sign Up
               </Button>
             </Grid>

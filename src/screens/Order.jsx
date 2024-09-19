@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Container, Typography, Box, CircularProgress, List, ListItem, ListItemText, Divider } from "@mui/material";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db } from "../components/Firebase"; 
+import { auth, db } from "../components/firebase"; 
 
 const RecentOrders = () => {
   const [orders, setOrders] = useState([]);

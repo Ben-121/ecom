@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Grid, Typography, Box, Checkbox, FormControlLabel, FormHelperText } from '@mui/material';
+import { Container, TextField, Button, Grid, Typography, Box, Checkbox, FormControlLabel, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
 import { db, auth } from '../components/firebase';
 
 const Signup = () => {
@@ -13,30 +12,54 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [isSeller, setIsSeller] = useState(false);
-  const [address, setAddress] = useState(''); // New state for address
+  const [address, setAddress] = useState('');
+
   const [passwordError, setPasswordError] = useState('');
+  const [mobileError, setMobileError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [generalError, setGeneralError] = useState('');
+  const [loading, setLoading] = useState(false); // State for loading spinner
 
   const navigate = useNavigate();
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
-    
-    // Validate password length
-    if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters long");
+    setGeneralError('');
+
+    if (!validateEmail(email)) {
+      setEmailError("Invalid email address");
+      return;
+    } else {
+      setEmailError('');
+    }
+
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
       return;
     } else {
       setPasswordError('');
     }
 
+    const mobileRegex = /^[0-9]{10}$/;
+    if (!mobileRegex.test(mobileNumber)) {
+      setMobileError("Mobile number must be exactly 10 digits");
+      return;
+    } else {
+      setMobileError('');
+    }
+
     if (password !== confirmPassword) {
-      toast.error("Passwords don't match", {
-        position: "bottom-center"
-      });
+      setGeneralError("Passwords don't match");
       return;
     }
 
     try {
+      setLoading(true); // Start loading spinner
       await createUserWithEmailAndPassword(auth, email, password);
       const user = auth.currentUser;
 
@@ -45,21 +68,20 @@ const Signup = () => {
           firstName: firstName,
           email: user.email,
           mobileNumber: mobileNumber,
-          address: address, // Save address
+          address: address,
           isSeller: isSeller,
         });
       }
-      navigate('/login');
 
-      console.log("User signed up:", user);
-      toast.success("Account Created Successfully", {
-        position: "top-center"
-      });
+      // Simulate loading for 0.5 seconds before redirect
+      setTimeout(() => {
+        setLoading(false); // Stop loading spinner
+        navigate('/login');
+      }, 500);
+
     } catch (error) {
-      console.log("Error signing up:", error.message);
-      toast.error(error.message, {
-        position: "bottom-center"
-      });
+      setLoading(false); // Stop loading spinner on error
+      setGeneralError(error.message);
     }
   };
 
@@ -99,6 +121,8 @@ const Signup = () => {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={!!emailError}
+            helperText={emailError}
           />
           <TextField
             margin="normal"
@@ -109,7 +133,12 @@ const Signup = () => {
             name="mobileNumber"
             autoComplete="tel"
             value={mobileNumber}
-            onChange={(e) => setMobileNumber(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '');
+              setMobileNumber(value);
+            }}
+            error={!!mobileError}
+            helperText={mobileError}
           />
           <TextField
             margin="normal"
@@ -137,8 +166,6 @@ const Signup = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-
-          {/* Address Field */}
           <TextField
             margin="normal"
             required
@@ -150,7 +177,6 @@ const Signup = () => {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
-
           <FormControlLabel
             control={
               <Checkbox
@@ -162,15 +188,27 @@ const Signup = () => {
             }
             label="Are you a seller?"
           />
+          {generalError && (
+            <Typography color="error" variant="body2">
+              {generalError}
+            </Typography>
+          )}
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Sign Up
-          </Button>
+          {/* Loading spinner */}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Sign Up
+            </Button>
+          )}
 
           <Grid container justifyContent="flex-end">
             <Grid item>

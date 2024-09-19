@@ -17,10 +17,14 @@ function Cart() {
   useEffect(() => {
     const fetchCartItems = async () => {
       const user = auth.currentUser;
+      console.log(user,"asdbbasd");
+      
       if (user) {
         const userId = user.uid; // Get user UID
         const cartRef = doc(db, 'cart', userId); // Reference to user's cart in Firestore
         const cartDoc = await getDoc(cartRef);
+        console.log(cartDoc,"cartdoc");
+        
 
         if (cartDoc.exists()) {
           setCartItems(cartDoc.data().items || []);
@@ -38,7 +42,7 @@ function Cart() {
     };
 
     fetchCartItems();
-  }, [updateCartCount, cartItems]);
+  }, [updateCartCount]);
 
   // Add timestamp and save action to Firestore in the 'activity' collection
   const logActivity = async (action, item) => {
