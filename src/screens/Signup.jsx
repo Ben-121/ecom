@@ -3,12 +3,8 @@ import { Container, TextField, Button, Grid, Typography, Box, Checkbox, FormCont
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
-<<<<<<< HEAD
 import { db, auth } from '../components/firebase';
-=======
-import { toast } from 'react-toastify';
-import { db, auth } from '../components/Firebase';
->>>>>>> c9f1364582cf86b1fcd8177cc29fe393688ff8ac
+
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');

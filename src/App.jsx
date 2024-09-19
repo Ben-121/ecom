@@ -10,11 +10,7 @@ import Body from "./components/Body";
 import Men from "./screens/path/Men";
 import Women from "./screens/path/Women";
 import Profile from './screens/Profile';
-<<<<<<< HEAD
-
-=======
 import RecentOrders from './screens/Orders';
->>>>>>> c9f1364582cf86b1fcd8177cc29fe393688ff8ac
 import Casual from "./screens/path/Casual";
 import Jewellery from "./screens/path/Jewellery";
 import Electronics from "./screens/path/Electronics";
@@ -28,7 +24,6 @@ import { HeaderLayout, LoginsignupLayout } from "./Route";
 import FAQPage from "./screens/FAQPage";
 import PrivacyPolicyPage from "./screens/PrivacyPolicyPage";
 import TermsAndConditions from "./screens/TermsAndConditions";
-import RecentOrders from "./screens/Order";
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
