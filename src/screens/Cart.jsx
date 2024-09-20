@@ -2,105 +2,45 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Cart.css';
 import { CartContext } from '../components/context/CartContext';
-// import { auth, db } from '../components/Firebase'; // Import Firebase
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
+import { doc, getDoc, setDoc } from 'firebase/firestore'; 
 import { db, auth } from '../components/Firebase';
-
 
 function Cart() {
   const navigate = useNavigate();
-  const { updateCartCount } = useContext(CartContext);
-  const [cartItems, setCartItems] = useState([]);
+  const { cartItems, setCartItems, cartCount, updateCartCount } = useContext(CartContext); // Use CartContext
   const [loading, setLoading] = useState(true);
 
-  // Fetch cart items based on user UID from Firestore
   useEffect(() => {
     const fetchCartItems = async () => {
       const user = auth.currentUser;
-      console.log(user,"asdbbasd");
-      
+
       if (user) {
-        const userId = user.uid; // Get user UID
-        const cartRef = doc(db, 'cart', userId); // Reference to user's cart in Firestore
+        const userId = user.uid;
+        const cartRef = doc(db, 'cart', userId);
         const cartDoc = await getDoc(cartRef);
-        console.log(cartDoc,"cartdoc");
-        
 
         if (cartDoc.exists()) {
-          setCartItems(cartDoc.data().items || []);
-        } else {
-          setCartItems([]);
-        }
+          const fetchedCartItems = cartDoc.data().items || [];
+          setCartItems(fetchedCartItems);
 
-        const newCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-        updateCartCount(newCartCount);
+          const newCartCount = fetchedCartItems.reduce((acc, item) => acc + item.quantity, 0);
+          updateCartCount(newCartCount); // Update cart count
+        } else {
+          setCartItems([]); // If no cart items exist, empty the cart
+          updateCartCount(0); // Reset cart count
+        }
       } else {
-        setCartItems([]);
+        setCartItems([]); // If no user is logged in, reset cart
+        updateCartCount(0); // Reset cart count
       }
 
       setLoading(false);
     };
 
-    fetchCartItems();
-  }, [updateCartCount]);
+    fetchCartItems(); // Fetch cart items on mount
 
-  // Add timestamp and save action to Firestore in the 'activity' collection
-  const logActivity = async (action, item) => {
-    const userId = auth.currentUser?.uid; // Get user UID
-    const timestamp = new Date().toLocaleString(); // Get current timestamp
+  }, [setCartItems, updateCartCount]);
 
-    if (userId) {
-      const activityRef = doc(db, 'activityHistory', userId); // Reference to the user's activity document in Firestore
-
-      // Initialize activity document if it doesn't exist
-      const activityDoc = await getDoc(activityRef);
-      if (!activityDoc.exists()) {
-        await setDoc(activityRef, { activities: [] });
-      }
-
-      // Add activity to the Firestore activity collection with timestamp
-      await updateDoc(activityRef, {
-        activities: arrayUnion({
-          ...item,
-          action,
-          timestamp, // Store the timestamp of the action
-        }),
-      });
-    }
-  };
-
-  // Add item to cart and log it in both 'cart' and 'activity' collections
-  const handleAddToCart = async (item) => {
-    const userId = auth.currentUser?.uid; // Get user UID
-    const cartRef = doc(db, 'cart', userId); // Reference to user's cart in Firestore
-
-    // Fetch existing cart items
-    const cartDoc = await getDoc(cartRef);
-    let cartItems = [];
-    if (cartDoc.exists()) {
-      cartItems = cartDoc.data().items || [];
-    }
-
-    // Check if the item already exists in the cart
-    const existingItemIndex = cartItems.findIndex((cartItem) => cartItem.id === item.id);
-    if (existingItemIndex !== -1) {
-      cartItems[existingItemIndex].quantity += 1;
-    } else {
-      cartItems.push({ ...item, quantity: 1 });
-    }
-
-    // Save the updated cart to Firestore
-    await setDoc(cartRef, { items: cartItems });
-
-    // Log the "added to cart" action in the activity collection
-    await logActivity('added to cart', item);
-
-    // Update the cart count in the context
-    const newCartCount = cartItems.reduce((acc, cartItem) => acc + cartItem.quantity, 0);
-    updateCartCount(newCartCount);
-  };
-
-  // Remove item from the cart and log it to the activity collection
   const handleRemove = async (index) => {
     const removedItem = cartItems[index];
     const updatedCartItems = cartItems.filter((_, i) => i !== index);
@@ -109,14 +49,12 @@ function Cart() {
     const userId = auth.currentUser?.uid;
     const cartRef = doc(db, 'cart', userId);
 
-    // Update the cart in Firestore
     await setDoc(cartRef, { items: updatedCartItems });
 
-    // Log the "removed from cart" action in the activity collection
-    await logActivity('removed from cart', removedItem);
+    const newCartCount = updatedCartItems.reduce((acc, item) => acc + item.quantity, 0);
+    updateCartCount(newCartCount); // Update cart count after removal
   };
 
-  // Increase item quantity in the cart and log it to the activity collection
   const handleAdd = async (index) => {
     const updatedCartItems = cartItems.map((item, i) =>
       i === index ? { ...item, quantity: item.quantity + 1 } : item
@@ -126,14 +64,12 @@ function Cart() {
     const userId = auth.currentUser?.uid;
     const cartRef = doc(db, 'cart', userId);
 
-    // Update the cart in Firestore
     await setDoc(cartRef, { items: updatedCartItems });
 
-    // Log the "increased quantity" action in the activity collection
-    await logActivity('increased quantity', updatedCartItems[index]);
+    const newCartCount = updatedCartItems.reduce((acc, item) => acc + item.quantity, 0);
+    updateCartCount(newCartCount); // Update cart count after addition
   };
 
-  // Decrease item quantity in the cart and log it to the activity collection
   const handleSubtract = async (index) => {
     const updatedCartItems = cartItems.map((item, i) =>
       i === index && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
@@ -143,14 +79,12 @@ function Cart() {
     const userId = auth.currentUser?.uid;
     const cartRef = doc(db, 'cart', userId);
 
-    // Update the cart in Firestore
     await setDoc(cartRef, { items: updatedCartItems });
 
-    // Log the "decreased quantity" action in the activity collection
-    await logActivity('decreased quantity', updatedCartItems[index]);
+    const newCartCount = updatedCartItems.reduce((acc, item) => acc + item.quantity, 0);
+    updateCartCount(newCartCount); // Update cart count after subtraction
   };
 
-  // Navigate to the payment page with cart data
   const handleBuyNow = () => {
     navigate('/payment', { state: { cartItems } });
   };
@@ -159,7 +93,10 @@ function Cart() {
     <div className="cart-container">
       <h2>Your Cart</h2>
       {loading ? (
-        <p>Loading cart items...</p>
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Loading cart items...</p>
+        </div>
       ) : cartItems.length > 0 ? (
         cartItems.map((cartItem, index) => (
           <div key={index} className="cart-item">

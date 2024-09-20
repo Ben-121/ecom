@@ -11,11 +11,12 @@ import {
   Rating,
   IconButton,
 } from "@mui/material";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
-import { db, auth } from "../components/Firebase"; // Make sure Firebase auth is imported
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, query, where, getDocs } from "firebase/firestore"; // Ensure Firebase Firestore imports are correct
+import { db, auth } from "../components/Firebase"; // Ensure Firebase auth is imported correctly
 import { useNavigate } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import { onAuthStateChanged } from "firebase/auth";
 
 function Seller() {
   const [title, setTitle] = useState("");
@@ -25,33 +26,51 @@ function Seller() {
   const [ratingCount, setRatingCount] = useState(0);
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [products, setProducts] = useState([]);
   const [editProductId, setEditProductId] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [isSeller, setIsSeller] = useState(false); 
+  const [isAuthenticated, setIsAuthenticated] = useState(false); 
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch the current user ID
-    const fetchUserId = () => {
-      const currentUser = auth.currentUser;
+    // using onAuthStateChanged
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUserId(currentUser.uid);
-        fetchProducts(currentUser.uid);
+        setIsAuthenticated(true);
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnapshot = await getDoc(userRef);
+
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          if (userData.isSeller) {
+            setIsSeller(true);
+            fetchProducts(currentUser.uid); 
+          } else {
+            setError("You are not authorized to access the seller dashboard.");
+          }
+        } else {
+          setError("User not found in Firestore.");
+        }
       } else {
-        setError("User not authenticated");
+        setIsAuthenticated(false);
+        setLoading(false);
       }
-    };
-    fetchUserId();
+      setLoading(false);
+    });
+
+    // Cleanup the listener on unmount
+    return () => unsubscribe();
   }, []);
 
   const fetchProducts = async (userId) => {
     try {
-      // Query products added by the current user (seller)
       const productsRef = collection(db, "products");
-      const q = query(productsRef, where("sellerId", "==", userId)); // Only get products for the current seller
+      const q = query(productsRef, where("sellerId", "==", userId)); // Query for products where sellerId matches the logged-in user
       const querySnapshot = await getDocs(q);
       const productsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -95,19 +114,17 @@ function Seller() {
         count: ratingCount,
       },
       category,
-      sellerId: userId, // Store seller's ID in the product document
+      sellerId: userId,
       createdAt: new Date(),
     };
 
     try {
       if (editProductId) {
-        // Update existing product
         const productRef = doc(db, "products", editProductId);
         await updateDoc(productRef, productData);
         alert("Product updated successfully!");
         setEditProductId(null);
       } else {
-        // Add new product
         await addDoc(collection(db, "products"), productData);
         alert("Product added successfully!");
       }
@@ -155,6 +172,46 @@ function Seller() {
       }
     }
   };
+
+  // Handle login navigation
+  const handleLogin = () => {
+    navigate("/login");
+  };
+
+  // Display loading state while fetching user data
+  if (loading) {
+    return (
+      <div style={{ padding: "20px", maxWidth: "600px", margin: "auto", textAlign: "center" }}>
+        <CircularProgress />
+        <Typography variant="h6" style={{ marginTop: "20px" }}>
+          Loading seller dashboard...
+        </Typography>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: "20px", maxWidth: "600px", margin: "auto", textAlign: "center" }}>
+        <Typography variant="h5" gutterBottom>
+          Please log in to access the seller dashboard.
+        </Typography>
+        <Button variant="contained" color="primary" onClick={handleLogin}>
+          Login
+        </Button>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && !isSeller) {
+    return (
+      <div style={{ padding: "20px", maxWidth: "600px", margin: "auto", textAlign: "center" }}>
+        <Typography variant="h5" color="error">
+          You are not authorized to access this page.
+        </Typography>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "20px", maxWidth: "600px", margin: "auto" }}>
@@ -224,16 +281,9 @@ function Seller() {
           onChange={(e) => setPrice(e.target.value)}
         />
 
-        <FormControl
-          variant="outlined"
-          style={{ width: "100%", margin: "20px 0" }}
-        >
+        <FormControl variant="outlined" style={{ width: "100%", margin: "20px 0" }}>
           <InputLabel>Category</InputLabel>
-          <Select
-            value={category}
-            onChange={handleCategoryChange}
-            label="Category"
-          >
+          <Select value={category} onChange={handleCategoryChange} label="Category">
             <MenuItem value="electronics">Electronics</MenuItem>
             <MenuItem value="jewelery">Jewelry</MenuItem>
             <MenuItem value="men's clothing">Men's Clothing</MenuItem>
@@ -241,13 +291,7 @@ function Seller() {
           </Select>
         </FormControl>
 
-        <Button
-          variant="contained"
-          color="primary"
-          type="submit"
-          fullWidth
-          disabled={loading}
-        >
+        <Button variant="contained" color="primary" type="submit" fullWidth disabled={loading}>
           {loading ? <CircularProgress size={24} /> : editProductId ? "Update Product" : "Add Product"}
         </Button>
       </form>
@@ -256,37 +300,41 @@ function Seller() {
         Product List
       </Typography>
 
-      {products.map((product) => (
-        <div
-          key={product.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          }}
-        >
-          <div>
-            <Typography variant="h6">{product.title}</Typography>
-            <Typography variant="body2">{product.description}</Typography>
-            <Typography variant="body2">
-              Price: ${product.price} | Rating: {product.rating.rate} ({product.rating.count} reviews)
-            </Typography>
-            <Typography variant="body2">Category: {product.category}</Typography>
+      {products.length === 0 ? (
+        <Typography>No products available.</Typography>
+      ) : (
+        products.map((product) => (
+          <div
+            key={product.id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+            }}
+          >
+            <div>
+              <Typography variant="h6">{product.title}</Typography>
+              <Typography variant="body2">{product.description}</Typography>
+              <Typography variant="body2">
+                Price: ${product.price} | Rating: {product.rating.rate} ({product.rating.count} reviews)
+              </Typography>
+              <Typography variant="body2">Category: {product.category}</Typography>
+            </div>
+            <div>
+              <IconButton onClick={() => handleEdit(product)} color="primary">
+                <EditIcon />
+              </IconButton>
+              <IconButton onClick={() => handleDelete(product.id)} color="secondary">
+                <DeleteIcon />
+              </IconButton>
+            </div>
           </div>
-          <div>
-            <IconButton onClick={() => handleEdit(product)} color="primary">
-              <EditIcon />
-            </IconButton>
-            <IconButton onClick={() => handleDelete(product.id)} color="secondary">
-              <DeleteIcon />
-            </IconButton>
-          </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }

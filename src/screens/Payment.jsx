@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardMedia, Typography, Button, Grid } from '@mui/material';
-import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../components/Firebase';
 import './Payment.css';
 
@@ -17,7 +17,7 @@ function Payment() {
   const [userPhone, setUserPhone] = useState('');
   const [userAddress, setUserAddress] = useState('');
   const [userId, setUserId] = useState('');
-  
+
   const [paymentObject, setPaymentObject] = useState(null);
 
   useEffect(() => {
@@ -58,10 +58,23 @@ function Payment() {
       await addDoc(collection(db, "orders"), orderData);
       alert("Order placed successfully!");
 
+      await clearUserCart(userId);
+
       navigate('/', { replace: true });
     } catch (error) {
       console.error("Error storing order details: ", error);
       alert("There was an issue storing the order details. Please try again.");
+    }
+  };
+
+  // get cart fromfirestore  and empty the arr 
+  const clearUserCart = async (userId) => {
+    try {
+      const cartRef = doc(db, 'cart', userId);
+      await updateDoc(cartRef, { items: [] });  
+      console.log("User cart cleared successfully.");
+    } catch (error) {
+      console.error("Error clearing the user's cart:", error);
     }
   };
 
@@ -84,6 +97,7 @@ function Payment() {
           handler: function (response) {
             alert("Payment successful! Payment ID: " + response.razorpay_payment_id);
 
+            // Store the order details and clear the cart
             storeOrderDetails(response.razorpay_payment_id, orderId);
           },
           prefill: {
@@ -182,4 +196,3 @@ function Payment() {
 }
 
 export default Payment;
-  

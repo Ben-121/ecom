@@ -5,7 +5,6 @@ import {
   Toolbar,
   IconButton,
   Typography,
-  TextField,
   FormControl,
   Select,
   MenuItem,
@@ -15,19 +14,60 @@ import {
   ListItem,
   ListItemText,
   Menu,
-  MenuItem as MUI_MenuItem,
+  InputBase,
+  Box,
 } from "@mui/material";
 import {
   ShoppingCart as ShoppingCartIcon,
   Menu as MenuIcon,
   History as HistoryIcon,
   Person as PersonIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import { auth, db } from "./Firebase";
 import { doc, getDoc } from "firebase/firestore";
 import logo from "../assets/logo.png";
-import "./Header.css";
 import { CartContext } from "./context/CartContext";
+import { styled, alpha } from "@mui/material/styles";
+
+const Search = styled("div")(({ theme }) => ({
+  position: "relative",
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: alpha(theme.palette.common.white, 0.15),
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.common.white, 0.25),
+  },
+  marginRight: theme.spacing(2),
+  marginLeft: 0,
+  width: "100%",
+  [theme.breakpoints.up("sm")]: {
+    marginLeft: theme.spacing(3),
+    width: "auto",
+  },
+}));
+
+const SearchIconWrapper = styled("div")(({ theme }) => ({
+  padding: theme.spacing(0, 2),
+  height: "100%",
+  position: "absolute",
+  pointerEvents: "none",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+}));
+
+const StyledInputBase = styled(InputBase)(({ theme }) => ({
+  color: "inherit",
+  "& .MuiInputBase-input": {
+    padding: theme.spacing(1, 1, 1, 0),
+    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+    transition: theme.transitions.create("width"),
+    width: "100%",
+    [theme.breakpoints.up("md")]: {
+      width: "20ch",
+    },
+  },
+}));
 
 function Header({ onCategoryChange, setSearchQuery }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -37,11 +77,11 @@ function Header({ onCategoryChange, setSearchQuery }) {
   });
   const [selectedCategory, setSelectedCategory] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
-  const openProfileMenu = Boolean(anchorEl);
+  const [searchTerm, setSearchTerm] = useState(""); // State for debouncing
   const navigate = useNavigate();
   const { cartCount } = useContext(CartContext);
 
-  // Fetch user data from Firestore
+  // Fetch user data from Firebase
   const fetchUserData = async (uid) => {
     const docRef = doc(db, "users", uid);
     const docSnap = await getDoc(docRef);
@@ -51,36 +91,49 @@ function Header({ onCategoryChange, setSearchQuery }) {
         name: data.firstName || "Guest",
         mobileNumber: data.mobileNumber || "",
       });
+      localStorage.setItem("userDetails", JSON.stringify(data));
     }
   };
 
   useEffect(() => {
-    const user = auth.currentUser;
-
-    if (!user && localStorage.getItem("userEmail")) {
-      const storedEmail = localStorage.getItem("userEmail");
-
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          fetchUserData(user.uid);
-        }
+    const localUserData = localStorage.getItem("userDetails");
+    if (localUserData) {
+      const parsedData = JSON.parse(localUserData);
+      setUserDetails({
+        name: parsedData.firstName || "Guest",
+        mobileNumber: parsedData.mobileNumber || "",
       });
-    } else if (user) {
-      fetchUserData(user.uid);
     }
+
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        await fetchUserData(user.uid);
+      } else {
+        setUserDetails({
+          name: "Guest",
+          mobileNumber: "",
+        });
+        localStorage.removeItem("userDetails");
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
+    setSearchTerm(event.target.value); 
   };
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      setSearchQuery(searchTerm); 
+    }, 500); 
+
+    return () => clearTimeout(debounce); 
+  }, [searchTerm, setSearchQuery]);
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
-  };
-
-  const handleNavigate = (path) => {
-    navigate(path, { replace: true });
-    setDrawerOpen(false);
   };
 
   const handleCategoryChange = (event) => {
@@ -97,75 +150,74 @@ function Header({ onCategoryChange, setSearchQuery }) {
     setAnchorEl(null);
   };
 
+  const handleLogin = () => {
+    window.location.replace("/login");
+  };
+
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      localStorage.removeItem("userEmail"); // Clear email from localStorage on logout
-      console.log("Logged out successfully");
+      localStorage.removeItem("userDetails");
       window.location.replace("/login");
     } catch (error) {
       console.error("Error logging out:", error);
     }
   };
 
-  const handleLogin = () => {
-    window.location.replace("/login");
-  };
-
   return (
-    <AppBar position="static" className="header">
-      <Toolbar className="toolbar">
-        <IconButton
-          edge="start"
-          color="inherit"
-          onClick={() => navigate("/", { replace: true })}
-        >
-          <img src={logo} alt="logo" className="logo" />
-        </IconButton>
-
-        {window.location.pathname === "/" && ( // manually check the path and render thhe child comp
-          <div className="headerInputContainer">
-            <FormControl
-              variant="outlined"
-              className="categorySelect"
-              style={{ width: "140px", marginRight: "8px" }}
-            >
-              <Select
-                value={selectedCategory}
-                onChange={handleCategoryChange}
-                label="Category"
-                style={{
-                  border: "2px solid #333",
-                  borderRadius: "4px",
-                }}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                <MenuItem value="electronics">Electronics</MenuItem>
-                <MenuItem value="jewelery">Jewelry</MenuItem>
-                <MenuItem value="men's clothing">Men's Clothing</MenuItem>
-                <MenuItem value="women's clothing">Women's Clothing</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              variant="outlined"
-              placeholder="Search Products"
-              onChange={handleSearchChange}
-              sx={{
-                backgroundColor: "white",
-                borderRadius: 1,
-                width: 400,
-              }}
-              size="small"
-            />
-          </div>
-        )}
-
-        <div className="headerActions">
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+            onClick={toggleDrawer(true)}
+          >
+            <MenuIcon />
+          </IconButton>
           <IconButton
             color="inherit"
-            onClick={() => navigate("/activityhistory")}
+            onClick={() => navigate("/", { replace: true })}
           >
+            <img src={logo} alt="logo" style={{ width: 40 }} />
+          </IconButton>
+          {window.location.pathname === "/" && (
+            <>
+              <FormControl sx={{ minWidth: 120 }}>
+                <Select
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
+                  displayEmpty
+                  inputProps={{ "aria-label": "Without label" }}
+                >
+                  <MenuItem value="">
+                    <em>All Categories</em>
+                  </MenuItem>
+                  <MenuItem value="electronics">Electronics</MenuItem>
+                  <MenuItem value="jewelery">Jewelry</MenuItem>
+                  <MenuItem value="men's clothing">Men's Clothing</MenuItem>
+                  <MenuItem value="women's clothing">Women's Clothing</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Search>
+                <SearchIconWrapper>
+                  <SearchIcon />
+                </SearchIconWrapper>
+                <StyledInputBase
+                  placeholder="Search…"
+                  inputProps={{ "aria-label": "search" }}
+                  onChange={handleSearchChange}
+                />
+              </Search>
+            </>
+          )}
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <IconButton color="inherit" onClick={() => navigate("/activityhistory")}>
             <HistoryIcon />
           </IconButton>
           <IconButton color="inherit" onClick={() => navigate("/cart")}>
@@ -180,60 +232,35 @@ function Header({ onCategoryChange, setSearchQuery }) {
           >
             <PersonIcon />
           </IconButton>
-          <IconButton edge="end" color="inherit" onClick={toggleDrawer(true)}>
-            <MenuIcon />
-          </IconButton>
-        </div>
-      </Toolbar>
+        </Toolbar>
+      </AppBar>
 
+      {/* Drawer and Menu */}
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-        <div className="drawerContainer">
-          <List>
-            {userDetails.name !== "Guest" && (
-              <ListItem button onClick={() => handleNavigate("/profile")}>
-                <ListItemText primary="Profile" />
-              </ListItem>
-            )}
-            <ListItem button onClick={() => handleNavigate("/orders")}>
-              <ListItemText primary="Recent Orders" />
+        <List>
+          {userDetails.name !== "Guest" && (
+            <ListItem button onClick={() => navigate("/profile")}>
+              <ListItemText primary="Profile" />
             </ListItem>
-          </List>
-        </div>
+          )}
+         {userDetails.isSeller === false &&
+         ( <ListItem button onClick={() => navigate("/orders")}>
+            <ListItemText primary="Recent Orders" />
+          </ListItem>)}
+        </List>
       </Drawer>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={openProfileMenu}
-        onClose={handleProfileMenuClose}
-      >
-        {userDetails && (
-          <>
-            <MUI_MenuItem>
-              <Typography variant="body1">{userDetails.name}</Typography>
-            </MUI_MenuItem>
-            {userDetails.name !== "Guest" && (
-              <MUI_MenuItem>
-                <Typography variant="body2">
-                  {userDetails.mobileNumber}
-                </Typography>
-              </MUI_MenuItem>
-            )}
-            {userDetails.name === "Guest" && (
-              <MUI_MenuItem onClick={handleLogin} style={{ color: "red" }}>
-                <Typography variant="body2">Login</Typography>
-              </MUI_MenuItem>
-            )}
-            {userDetails.name !== "Guest" && (
-              <MUI_MenuItem onClick={handleLogout}>
-                <Typography variant="body2" color="error">
-                  Logout
-                </Typography>
-              </MUI_MenuItem>
-            )}
-          </>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleProfileMenuClose}>
+        <MenuItem>
+          <Typography>{userDetails.name}</Typography>
+        </MenuItem>
+        {userDetails.name === "Guest" ? (
+          <MenuItem onClick={handleLogin}>Login</MenuItem>
+        ) : (
+          <MenuItem onClick={handleLogout}>Logout</MenuItem>
         )}
       </Menu>
-    </AppBar>
+    </Box>
   );
 }
 
