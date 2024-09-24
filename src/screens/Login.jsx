@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Container, TextField, Button, Grid, Typography, Box, Alert, CircularProgress, FormControlLabel, Checkbox } from '@mui/material';
+import {
+  Container,
+  TextField,
+  Button,
+  Grid,
+  Typography,
+  Box,
+  Alert,
+  CircularProgress,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../components/Firebase'; // assuming you have exported 'db' from your Firebase config
+import { useDispatch } from "react-redux"; 
+import { setUser } from '../redux/authSlice';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +25,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch(); 
 
+  // Load saved email if "Remember Me" was checked previously
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
     if (savedEmail) {
@@ -27,20 +42,33 @@ const Login = () => {
     setLoading(true);
 
     try {
+      // Attempt to sign in with Firebase Authentication
       await signInWithEmailAndPassword(auth, email, password);
       const user = auth.currentUser;
 
+      // Retrieve user data from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
 
+        // Save email to local storage if "Remember Me" is checked
         if (rememberMe) {
           localStorage.setItem('rememberedEmail', email);
         } else {
           localStorage.removeItem('rememberedEmail');
         }
 
+        // Dispatch user data to Redux store
+        dispatch(setUser({
+          uid: user.uid,
+          name: userData.firstName || "Guest",
+          email: user.email,
+          isSeller: userData.isSeller || false,
+          mobileNumber: userData.mobileNumber || "",
+        }));
+
+        // Navigate to the appropriate page based on user type
         if (userData.isSeller) {
           setTimeout(() => {
             setLoading(false);

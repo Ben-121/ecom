@@ -24,11 +24,12 @@ import {
   Person as PersonIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { auth, db } from "./Firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { auth } from "./Firebase"; // Import Firebase only if you still use it for login/logout actions
 import logo from "../assets/logo.png";
 import { CartContext } from "./context/CartContext";
 import { styled, alpha } from "@mui/material/styles";
+import { useDispatch, useSelector } from "react-redux"; 
+import { setUser,clearUser } from "../redux/authSlice";
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -71,54 +72,14 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 function Header({ onCategoryChange, setSearchQuery }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [userDetails, setUserDetails] = useState({
-    name: "Guest",
-    mobileNumber: "",
-  });
   const [selectedCategory, setSelectedCategory] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(""); // State for debouncing
+  const [searchTerm, setSearchTerm] = useState(""); 
   const navigate = useNavigate();
   const { cartCount } = useContext(CartContext);
-
-  // Fetch user data from Firebase
-  const fetchUserData = async (uid) => {
-    const docRef = doc(db, "users", uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      setUserDetails({
-        name: data.firstName || "Guest",
-        mobileNumber: data.mobileNumber || "",
-      });
-      localStorage.setItem("userDetails", JSON.stringify(data));
-    }
-  };
-
-  useEffect(() => {
-    const localUserData = localStorage.getItem("userDetails");
-    if (localUserData) {
-      const parsedData = JSON.parse(localUserData);
-      setUserDetails({
-        name: parsedData.firstName || "Guest",
-        mobileNumber: parsedData.mobileNumber || "",
-      });
-    }
-
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        await fetchUserData(user.uid);
-      } else {
-        setUserDetails({
-          name: "Guest",
-          mobileNumber: "",
-        });
-        localStorage.removeItem("userDetails");
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+  
+  const dispatch = useDispatch(); 
+  const userDetails = useSelector((state) => state.auth.user); // get user data from Redux store
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value); 
@@ -156,8 +117,8 @@ function Header({ onCategoryChange, setSearchQuery }) {
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
-      localStorage.removeItem("userDetails");
+      await auth.signOut(); 
+      dispatch(clearUser());
       window.location.replace("/login");
     } catch (error) {
       console.error("Error logging out:", error);
@@ -168,33 +129,19 @@ function Header({ onCategoryChange, setSearchQuery }) {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            sx={{ mr: 2 }}
-            onClick={toggleDrawer(true)}
-          >
+          <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }} onClick={toggleDrawer(true)}>
             <MenuIcon />
           </IconButton>
-          <IconButton
-            color="inherit"
-            onClick={() => navigate("/", { replace: true })}
-          >
+          <IconButton color="inherit" onClick={() => navigate("/", { replace: true })}>
             <img src={logo} alt="logo" style={{ width: 40 }} />
           </IconButton>
+          
+          {/* Search and Category Selection */}
           {window.location.pathname === "/" && (
             <>
               <FormControl sx={{ minWidth: 120 }}>
-                <Select
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  displayEmpty
-                  inputProps={{ "aria-label": "Without label" }}
-                >
-                  <MenuItem value="">
-                    <em>All Categories</em>
-                  </MenuItem>
+                <Select value={selectedCategory} onChange={handleCategoryChange} displayEmpty inputProps={{ "aria-label": "Without label" }}>
+                  <MenuItem value=""><em>All Categories</em></MenuItem>
                   <MenuItem value="electronics">Electronics</MenuItem>
                   <MenuItem value="jewelery">Jewelry</MenuItem>
                   <MenuItem value="men's clothing">Men's Clothing</MenuItem>
@@ -206,11 +153,7 @@ function Header({ onCategoryChange, setSearchQuery }) {
                 <SearchIconWrapper>
                   <SearchIcon />
                 </SearchIconWrapper>
-                <StyledInputBase
-                  placeholder="Search…"
-                  inputProps={{ "aria-label": "search" }}
-                  onChange={handleSearchChange}
-                />
+                <StyledInputBase placeholder="Search…" inputProps={{ "aria-label": "search" }} onChange={handleSearchChange} />
               </Search>
             </>
           )}
@@ -225,36 +168,30 @@ function Header({ onCategoryChange, setSearchQuery }) {
               <ShoppingCartIcon />
             </Badge>
           </IconButton>
-          <IconButton
-            edge="end"
-            color="inherit"
-            onClick={handleProfileMenuOpen}
-          >
+          <IconButton edge="end" color="inherit" onClick={handleProfileMenuOpen}>
             <PersonIcon />
           </IconButton>
         </Toolbar>
       </AppBar>
 
-      {/* Drawer and Menu */}
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
         <List>
-          {userDetails.name !== "Guest" && (
+          {userDetails && userDetails.name !== "Guest" && (
             <ListItem button onClick={() => navigate("/profile")}>
               <ListItemText primary="Profile" />
             </ListItem>
           )}
-         {userDetails.isSeller === false &&
-         ( <ListItem button onClick={() => navigate("/orders")}>
+          <ListItem button onClick={() => navigate("/orders")}>
             <ListItemText primary="Recent Orders" />
-          </ListItem>)}
+          </ListItem>
         </List>
       </Drawer>
 
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleProfileMenuClose}>
         <MenuItem>
-          <Typography>{userDetails.name}</Typography>
+          <Typography>{userDetails ? userDetails.name : "Guest"}</Typography>
         </MenuItem>
-        {userDetails.name === "Guest" ? (
+        {(!userDetails || userDetails.name === "Guest") ? (
           <MenuItem onClick={handleLogin}>Login</MenuItem>
         ) : (
           <MenuItem onClick={handleLogout}>Logout</MenuItem>

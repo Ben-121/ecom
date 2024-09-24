@@ -70,7 +70,7 @@ function Seller() {
   const fetchProducts = async (userId) => {
     try {
       const productsRef = collection(db, "products");
-      const q = query(productsRef, where("sellerId", "==", userId)); // Query for products where sellerId matches the logged-in user
+      const q = query(productsRef, where("sellerId", "==", userId)); 
       const querySnapshot = await getDocs(q);
       const productsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,

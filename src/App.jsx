@@ -24,7 +24,6 @@ import { HeaderLayout, LoginsignupLayout } from "./Route";
 import FAQPage from "./screens/FAQPage";
 import PrivacyPolicyPage from "./screens/PrivacyPolicyPage";
 import TermsAndConditions from "./screens/TermsAndConditions";
-
 function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
