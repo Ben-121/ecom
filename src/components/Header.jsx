@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AppBar,
@@ -24,12 +24,12 @@ import {
   Person as PersonIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { auth } from "./Firebase"; // Import Firebase only if you still use it for login/logout actions
+import { auth } from "./Firebase";
 import logo from "../assets/logo.png";
-import { CartContext } from "./context/CartContext";
 import { styled, alpha } from "@mui/material/styles";
 import { useDispatch, useSelector } from "react-redux"; 
-import { setUser,clearUser } from "../redux/authSlice";
+import { setUser, clearUser } from "../redux/authSlice";
+import { fetchCartItems } from "../components/context/CartSlice"; 
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -76,10 +76,14 @@ function Header({ onCategoryChange, setSearchQuery }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchTerm, setSearchTerm] = useState(""); 
   const navigate = useNavigate();
-  const { cartCount } = useContext(CartContext);
-  
+
   const dispatch = useDispatch(); 
-  const userDetails = useSelector((state) => state.auth.user); // get user data from Redux store
+  const userDetails = useSelector((state) => state.auth.user); 
+  const cartCount = useSelector((state) => state.cart.cartCount); 
+
+  useEffect(() => {
+    dispatch(fetchCartItems()); 
+  }, [dispatch]);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value); 
@@ -117,9 +121,16 @@ function Header({ onCategoryChange, setSearchQuery }) {
 
   const handleLogout = async () => {
     try {
+      // Sign out from Firebase
       await auth.signOut(); 
+      
+      // Clear user data from Redux store
       dispatch(clearUser());
-      window.location.replace("/login");
+      
+      localStorage.clear();
+      sessionStorage.clear();
+
+      window.location.replace("/");
     } catch (error) {
       console.error("Error logging out:", error);
     }
@@ -136,7 +147,6 @@ function Header({ onCategoryChange, setSearchQuery }) {
             <img src={logo} alt="logo" style={{ width: 40 }} />
           </IconButton>
           
-          {/* Search and Category Selection */}
           {window.location.pathname === "/" && (
             <>
               <FormControl sx={{ minWidth: 120 }}>

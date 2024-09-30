@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -8,15 +8,16 @@ import CardActionArea from '@mui/material/CardActionArea';
 import Rating from '@mui/material/Rating';
 import Button from '@mui/material/Button';
 import './ProductItem.css';
-import { CartContext } from './context/CartContext';
-// import { auth,  } from '..components/Firebase'; // Firebase auth and Firestore
-import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
+import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, auth } from './Firebase';
-
+import { useDispatch, useSelector } from 'react-redux';
+import { setCartItems, syncCartWithFirebase } from '../components/context/CartSlice'; // Import the cart actions
 
 function ProductItem({ item }) {
   const navigate = useNavigate();
-  const { updateCartCount } = useContext(CartContext);
+  const dispatch = useDispatch();
+
+  const cartItems = useSelector((state) => state.cart.cartItems); // Retrieve cartItems from Redux store
 
   const handleAddToCart = async () => {
     const user = auth.currentUser;
@@ -26,9 +27,9 @@ function ProductItem({ item }) {
       return;
     }
 
-    const userId = user.uid; // Use user's UID
-    const cartRef = doc(db, 'cart', userId); // Reference to the cart collection
-    const activityRef = doc(db, 'activityHistory', userId); 
+    const userId = user.uid;
+    const cartRef = doc(db, 'cart', userId);
+    const activityRef = doc(db, 'activityHistory', userId);
 
     try {
       const cartDoc = await getDoc(cartRef);
@@ -41,26 +42,32 @@ function ProductItem({ item }) {
       const existingItemIndex = cartItems.findIndex((cartItem) => cartItem.id === item.id);
 
       if (existingItemIndex !== -1) {
-        cartItems[existingItemIndex].quantity += 1; 
+        cartItems[existingItemIndex].quantity += 1;
       } else {
-        cartItems.push({ ...item, quantity: 1 }); 
+        cartItems.push({ ...item, quantity: 1 });
       }
-      await setDoc(cartRef, { items: cartItems });
 
+      // Update the cart in Firestore
+      await setDoc(cartRef, { items: cartItems });
+      
+      // Dispatch the updated cart items to the Redux store
+      dispatch(setCartItems(cartItems));
+      dispatch(updateCartCount()); 
+      dispatch(syncCartWithFirebase(cartItems));
+
+      // Handle activity history update
       const activityDoc = await getDoc(activityRef);
       if (!activityDoc.exists()) {
-        // If activity document doesn't exist, create it with the first activity
         await setDoc(activityRef, {
           activities: [
             {
               ...item,
               action: 'added to cart',
-              timestamp: new Date().toLocaleString(), 
+              timestamp: new Date().toLocaleString(),
             },
           ],
         });
       } else {
-        // If document exists, update the activity with arrayUnion
         await updateDoc(activityRef, {
           activities: arrayUnion({
             ...item,
@@ -70,9 +77,6 @@ function ProductItem({ item }) {
         });
       }
 
-      const newCartCount = cartItems.reduce((acc, cartItem) => acc + cartItem.quantity, 0);
-      updateCartCount(newCartCount);
-
       alert(`${item.title} added to your cart and activity history!`);
     } catch (error) {
       console.error('Error adding item to cart or activity:', error);
@@ -80,17 +84,15 @@ function ProductItem({ item }) {
     }
   };
 
-  // Handle Buy Now action
   const handleBuyNow = () => {
     navigate('/payment', { state: { cartItems: [{ ...item, quantity: 1 }] } });
   };
 
-  // Handle View Details action
   const handleViewDetails = async () => {
     const user = auth.currentUser;
 
     if (user) {
-      const userId = user.uid; 
+      const userId = user.uid;
       const activityRef = doc(db, 'activityHistory', userId);
 
       try {
@@ -150,7 +152,6 @@ function ProductItem({ item }) {
             ₹{item.price.toFixed(2)}
           </Typography>
 
-          {/* Display rating as stars */}
           <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
             <Rating name="read-only" value={item.rating.rate} precision={0.1} readOnly />
             <Typography variant="body2" style={{ marginLeft: '8px' }}>
@@ -160,7 +161,6 @@ function ProductItem({ item }) {
         </CardContent>
       </CardActionArea>
 
-      {/* Action buttons */}
       <div className="product-actions" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px' }}>
         <Button
           variant="contained"

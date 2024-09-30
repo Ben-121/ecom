@@ -1,88 +1,50 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import './Cart.css';
-import { CartContext } from '../components/context/CartContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore'; 
-import { db, auth } from '../components/Firebase';
+import { auth } from '../components/Firebase'; // Import Firebase auth
+import {
+  fetchCartItems,
+  setCartItems,
+  updateQuantity,
+  removeFromCart,
+  syncCartWithFirebase,
+} from '../components/context/CartSlice';
 
 function Cart() {
   const navigate = useNavigate();
-  const { cartItems, setCartItems, cartCount, updateCartCount } = useContext(CartContext); // Use CartContext
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { cartItems, loading } = useSelector((state) => state.cart); // Removed cartCount since it's not used
 
   useEffect(() => {
-    const fetchCartItems = async () => {
+    const checkUserAndFetchCart = () => {
       const user = auth.currentUser;
-
       if (user) {
-        const userId = user.uid;
-        const cartRef = doc(db, 'cart', userId);
-        const cartDoc = await getDoc(cartRef);
-
-        if (cartDoc.exists()) {
-          const fetchedCartItems = cartDoc.data().items || [];
-          setCartItems(fetchedCartItems);
-
-          const newCartCount = fetchedCartItems.reduce((acc, item) => acc + item.quantity, 0);
-          updateCartCount(newCartCount); // Update cart count
-        } else {
-          setCartItems([]); // If no cart items exist, empty the cart
-          updateCartCount(0); // Reset cart count
-        }
+        dispatch(fetchCartItems());
       } else {
-        setCartItems([]); // If no user is logged in, reset cart
-        updateCartCount(0); // Reset cart count
+        dispatch(setCartItems([])); // Ensure the cart is empty if no user is logged in
       }
-
-      setLoading(false);
     };
 
-    fetchCartItems(); // Fetch cart items on mount
+    checkUserAndFetchCart();
+  }, [dispatch]);
 
-  }, [setCartItems, updateCartCount]);
-
-  const handleRemove = async (index) => {
-    const removedItem = cartItems[index];
+  const handleRemove = (index) => {
     const updatedCartItems = cartItems.filter((_, i) => i !== index);
-    setCartItems(updatedCartItems);
-
-    const userId = auth.currentUser?.uid;
-    const cartRef = doc(db, 'cart', userId);
-
-    await setDoc(cartRef, { items: updatedCartItems });
-
-    const newCartCount = updatedCartItems.reduce((acc, item) => acc + item.quantity, 0);
-    updateCartCount(newCartCount); // Update cart count after removal
+    dispatch(setCartItems(updatedCartItems));
+    dispatch(syncCartWithFirebase(updatedCartItems));
   };
 
-  const handleAdd = async (index) => {
-    const updatedCartItems = cartItems.map((item, i) =>
-      i === index ? { ...item, quantity: item.quantity + 1 } : item
-    );
-    setCartItems(updatedCartItems);
-
-    const userId = auth.currentUser?.uid;
-    const cartRef = doc(db, 'cart', userId);
-
-    await setDoc(cartRef, { items: updatedCartItems });
-
-    const newCartCount = updatedCartItems.reduce((acc, item) => acc + item.quantity, 0);
-    updateCartCount(newCartCount); // Update cart count after addition
+  const handleAdd = (index) => {
+    const updatedQuantity = cartItems[index].quantity + 1;
+    dispatch(updateQuantity({ index, quantity: updatedQuantity }));
+    dispatch(syncCartWithFirebase(cartItems));
   };
 
-  const handleSubtract = async (index) => {
-    const updatedCartItems = cartItems.map((item, i) =>
-      i === index && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
-    );
-    setCartItems(updatedCartItems);
-
-    const userId = auth.currentUser?.uid;
-    const cartRef = doc(db, 'cart', userId);
-
-    await setDoc(cartRef, { items: updatedCartItems });
-
-    const newCartCount = updatedCartItems.reduce((acc, item) => acc + item.quantity, 0);
-    updateCartCount(newCartCount); // Update cart count after subtraction
+  const handleSubtract = (index) => {
+    const updatedQuantity = cartItems[index].quantity > 1 ? cartItems[index].quantity - 1 : 1;
+    dispatch(updateQuantity({ index, quantity: updatedQuantity }));
+    dispatch(syncCartWithFirebase(cartItems));
   };
 
   const handleBuyNow = () => {

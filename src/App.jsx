@@ -18,7 +18,6 @@ import Monitors from "./screens/path/Monitors";
 import Bags from "./screens/path/Bags";
 import AboutUs from "./screens/Aboutus";
 import ActivityHistory from "./screens/ActivityHistory";
-import { CartProvider } from "./components/context/CartContext";
 import Seller from "./screens/Seller";
 import { HeaderLayout, LoginsignupLayout } from "./Route";
 import FAQPage from "./screens/FAQPage";
@@ -33,7 +32,6 @@ function App() {
   };
 
   return (
-    <CartProvider>
       <Router>
         <Routes>
           <Route element={<LoginsignupLayout />}>
@@ -79,7 +77,6 @@ function App() {
           </Route>
         </Routes>
       </Router>
-    </CartProvider>
   );
 }
 

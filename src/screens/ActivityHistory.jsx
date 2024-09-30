@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../components/Firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
@@ -13,7 +13,7 @@ import './ActivityHistory.css';
 function ActivityHistory() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortOrder, setSortOrder] = useState('desc'); // Default to descending
 
   useEffect(() => {
     const fetchActivityHistory = async (userId) => {
@@ -24,10 +24,18 @@ function ActivityHistory() {
         if (docSnap.exists()) {
           let activities = docSnap.data().activities || [];
 
-          // Filter unique activities based on title
-          const uniqueActivities = activities.filter(
-            (item, index, self) => index === self.findIndex((t) => t.title === item.title)
-          );
+          // Create a map to track unique activities based on the title
+          const uniqueActivityMap = new Map();
+          activities.forEach((activity) => {
+            // If activity already exists, update its position to be the most recent
+            uniqueActivityMap.set(activity.title, activity);
+          });
+
+          // Convert the map back to an array to maintain only unique items with most recent ones at the end
+          const uniqueActivities = Array.from(uniqueActivityMap.values());
+
+          // Sort the activities by timestamp in descending order (most recent first)
+          uniqueActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
           setHistory(uniqueActivities);
         } else {
@@ -40,7 +48,6 @@ function ActivityHistory() {
       }
     };
 
-    // Use onAuthStateChanged to ensure we have the current user before fetching data
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         fetchActivityHistory(user.uid);
@@ -52,25 +59,17 @@ function ActivityHistory() {
     return () => unsubscribe(); 
   }, []);
 
-  const sortHistoryByTimestamp = (order) => {
-    const sortedHistory = [...history].sort((a, b) => {
-      const dateA = new Date(a.timestamp);
-      const dateB = new Date(b.timestamp);
-
-      if (order === 'asc') {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
-      }
-    });
-
-    setHistory(sortedHistory);
-  };
-
   const handleSortToggle = () => {
     const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(newOrder);
-    sortHistoryByTimestamp(newOrder);
+
+    const sortedHistory = [...history].sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return newOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+
+    setHistory(sortedHistory);
   };
 
   return (

@@ -14,9 +14,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../components/Firebase'; // assuming you have exported 'db' from your Firebase config
+import { auth, db } from '../components/Firebase'; 
 import { useDispatch } from "react-redux"; 
 import { setUser } from '../redux/authSlice';
+import CryptoJS from 'crypto-js'; 
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -27,14 +28,31 @@ const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch(); 
 
-  // Load saved email if "Remember Me" was checked previously
+  // Check for existing session data on component mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
+    const encryptedUserData = sessionStorage.getItem('encryptedUserData') || localStorage.getItem('encryptedUserData');
+
     if (savedEmail) {
       setEmail(savedEmail);
       setRememberMe(true);
     }
-  }, []);
+
+    if (encryptedUserData) {
+      try {
+        const decryptedData = CryptoJS.AES.decrypt(encryptedUserData, 'your-encryption-secret-key').toString(CryptoJS.enc.Utf8);
+        const userDetails = JSON.parse(decryptedData);
+
+        // Dispatch the user data to Redux store
+        dispatch(setUser(userDetails));
+        
+        // Redirect the user based on their role
+        navigate(userDetails.isSeller ? '/seller-dashboard' : '/');
+      } catch (error) {
+        console.error('Error decrypting user data:', error);
+      }
+    }
+  }, [dispatch, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -52,31 +70,34 @@ const Login = () => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
 
-        // Save email to local storage if "Remember Me" is checked
-        if (rememberMe) {
-          localStorage.setItem('rememberedEmail', email);
-        } else {
-          localStorage.removeItem('rememberedEmail');
-        }
-
-        // Dispatch user data to Redux store
-        dispatch(setUser({
+        // Combine user details
+        const userDetails = {
           uid: user.uid,
           name: userData.firstName || "Guest",
           email: user.email,
           isSeller: userData.isSeller || false,
           mobileNumber: userData.mobileNumber || "",
+        };
+
+        // Encrypt user details
+        const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(userDetails), 'your-encryption-secret-key').toString();
+
+        // Store encrypted data based on "Remember Me"
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+          localStorage.setItem('encryptedUserData', encryptedData);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          sessionStorage.setItem('encryptedUserData', encryptedData);
+        }
+
+        // Dispatch user data to Redux store
+        dispatch(setUser({
+          ...userDetails,
+          rememberMe: rememberMe,
         }));
 
-        // Navigate to the appropriate page based on user type
-        if (userData.isSeller) {
-          setTimeout(() => {
-            setLoading(false);
-            navigate('/');
-          }, 500);
-        } else {
-          navigate('/');
-        }
+        navigate(userData.isSeller ? '/seller-dashboard' : '/');
       } else {
         console.log("No such document!");
         setLoading(false);
@@ -90,17 +111,8 @@ const Login = () => {
 
   return (
     <Container maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          Login
-        </Typography>
+      <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Typography component="h1" variant="h5">Login</Typography>
         <Box component="form" onSubmit={handleLogin} sx={{ mt: 1 }}>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -140,20 +152,13 @@ const Login = () => {
               <CircularProgress />
             </Box>
           ) : (
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
+            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
               Login
             </Button>
           )}
           <Grid container justifyContent="flex-end">
             <Grid item>
-              <Button onClick={() => navigate('/signup')}>
-                Don't have an account? Sign Up
-              </Button>
+              <Button onClick={() => navigate('/signup')}>Don't have an account? Sign Up</Button>
             </Grid>
           </Grid>
         </Box>

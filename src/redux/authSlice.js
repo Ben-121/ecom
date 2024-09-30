@@ -1,24 +1,50 @@
-import { createSlice } from "@reduxjs/toolkit";
+  import { createSlice } from "@reduxjs/toolkit";
+  import CryptoJS from "crypto-js"; // Import crypto-js for encryption
 
-const savedUser = JSON.parse(localStorage.getItem("userDetails")) || null;
-console.log(savedUser,"trigger localStorage");
+  // Decryption function
+  const decryptData = (encryptedData) => {
+    if (!encryptedData) return null;
+    try {
+      const bytes = CryptoJS.AES.decrypt(encryptedData, 'your-encryption-secret-key');
+      return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    } catch (error) {
+      console.error("Decryption failed:", error);
+      return null;
+    }
+  };
 
-const authSlice = createSlice({
-  name: "auth",
-  initialState: {
-    user: savedUser, // set initial value from localstorag
-  },
-  reducers: {
-    setUser: (state, action) => {//save
-      state.user = action.payload;
-      localStorage.setItem("userDetails", JSON.stringify(action.payload));
+  // Load encrypted user data from localStorage or sessionStorage
+  const savedUser =
+    decryptData(localStorage.getItem("encryptedUserData")) ||
+    null;
+
+  console.log(savedUser, "trigger storage");
+
+  const authSlice = createSlice({
+    name: "auth",
+    initialState: {
+      user: savedUser, // set initial value from localStorage or sessionStorage
     },
-    clearUser: (state) => {//deelete
-      state.user = null;
-      localStorage.removeItem("userDetails");
-    },
-  },
-});
+    reducers: {
+      setUser: (state, action) => {
+        state.user = action.payload;
+        
+        // Encrypt user data
+        const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(action.payload), 'your-encryption-secret-key').toString();
 
-export const { setUser, clearUser } = authSlice.actions;
-export default authSlice.reducer;
+        if (action.payload.rememberMe) {
+          localStorage.setItem("encryptedUserData", encryptedData);
+        } else {
+          sessionStorage.setItem("encryptedUserData", encryptedData);
+        }
+      },
+      clearUser: (state) => {
+        state.user = null;
+        localStorage.removeItem("encryptedUserData");
+        sessionStorage.removeItem("encryptedUserData");
+      },
+    },
+  });
+
+  export const { setUser, clearUser } = authSlice.actions;
+  export default authSlice.reducer;
